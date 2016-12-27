@@ -3,59 +3,92 @@ import minpy.nn.layers as layers
 from minpy.nn.model import ModelBase
 import minpy.numpy as np
 import minpy.numpy.random as random
+import numpy as np0
 
-from minpy.context import set_context, gpu
-set_context(gpu(0))
+from facility import *
 
-from solver_primitives import *
-
-class RNNNet(ModelBase):
-  def __init__(self, input_size, n_hidden, n_classes):
-    super(RNNNet, self).__init__()
+class FastWeightRNN(ModelBase):
+  def __init__(self, input_size, n_hidden, n_classes, inner_length):
+    super(FastWeightRNN, self).__init__()
+    self._inner_length = inner_length
     self._input_size = input_size
     self._n_hidden = n_hidden
     self._n_classes = n_classes
 
     self._decay_rate = 0.95
     self._learning_rate = 0.5
-    self._inner_length = 5
     self._nonlinear = np.tanh
 
+    # TODO initialization (paper)
     self \
-      .add_param(name='WX', shape=(input_size, n_hidden)) \
+      .add_param(
+        name        = 'WX',
+        shape       = (input_size, n_hidden),
+        init_rule   = 'custom',
+        init_config = {
+          'function' : lambda shape : np.random.uniform(-n_hidden ** 0.5, n_hidden ** 0.5, shape)
+        }
+      ) \
       .add_param(
         name        = 'Wh',
         shape       = (n_hidden, n_hidden),
-        init_rule   = 'constant',
-        init_config = {'value' : np.identity(n_hidden)}
+        init_rule   = 'custom',
+        init_config = {'function' : lambda shape : np0.identity(n_hidden)}
       ) \
       .add_param(
         name        ='b',
         shape       = (n_hidden,),
         init_rule   = 'constant',
-        init_config = {'value' : np.zeros(n_hidden)}
+        init_config = {'value' : 0}
       ) \
-      .add_param(name='WY', shape=(n_hidden, n_classes))\
-      .add_param(name='bias_Y', shape=(n_classes,)) \
       .add_param(
-        name        = 'A',
-        shape       = (n_hidden, n_hidden),
+        name        = 'gamma',
+        shape       = (n_hidden,),
         init_rule   = 'constant',
-        init_config = {'value' : np.random.uniform(0.0, 0.01, (n_hidden, n_hidden))}
+        init_config = {'value' : 1}
+      ) \
+      .add_param(
+        name        = 'beta',
+        shape       = (n_hidden,),
+        init_rule   = 'constant',
+        init_config = {'value' : 0}
+      ) \
+      .add_param(
+        name        = 'WY',
+        shape       = (n_hidden, n_classes),
+        init_rule   = 'xavier',
+        init_config = {}
+      )\
+      .add_param(
+        name        = 'bias_Y',
+        shape       = (n_classes,),
+        init_rule   = 'constant',
+        init_config = {'value' : 0}
       )
 
-  def _step(self, X, previous_h, WX, Wh, bias):
+  def _update_h(self, X, previous_h, WX, Wh, bias):
     next_h = self._nonlinear(np.dot(X, WX) + np.dot(previous_h, Wh) + bias)
     return next_h
 
-  def _inner_loop(self, X, h, WX, Wh, A):
-    for t in xrange(self._inner_length):
-      h = self._nonlinear(np.dot(X, WX) + np.dot(h, Wh) + np.dot(h, A))
-    return h
+  def _inner_loop(self, X, h, h0, WX, Wh, previous_h):
+    # TODO efficiency
+    N, H = h.shape
+    gamma, beta = self.params['gamma'], self.params['beta']
+    hs = h0
+    for s in xrange(self._inner_length):
+      projected_hs = self._learning_rate * sum(
+        self._decay_rate ** (len(previous_h) - t - 1) * diagonal(np.dot(h, hs.T)) * h
+          for t, h in enumerate(previous_h)
+      )
+      hs = np.dot(X, WX) + np.dot(h, Wh) + projected_hs
+      hs = layer_normalization(hs, gamma, beta)
+      hs = self._nonlinear(hs)
+    return hs
+
   def forward(self, X, mode):
+    # A is not computed
     N, sequence_length, D = X.shape
     h = np.zeros((N, self._n_hidden))
-    A = 0 # TODO whether A is a parameter
 
     WX     = self.params['WX']
     Wh     = self.params['Wh']
@@ -63,10 +96,11 @@ class RNNNet(ModelBase):
     WY     = self.params['WY']
     bias_Y = self.params['bias_Y']
 
+    previous_h = [h]
     for t in xrange(sequence_length):
-      h = self._step(X[:, t, :], h, WX, Wh, bias)
-      A = self._decay_rate * A + self._learning_rate * np.outer(h.T, h)
-      h = self._inner_loop(X[:, t, :], h, WX, Wh, A)
+      h = self._update_h(X[:, t, :], h, WX, Wh, bias)
+      h = self._inner_loop(X[:, t, :], previous_h[-1], h, WX, Wh, previous_h)
+      previous_h.append(h)
 
     return layers.affine(h, WY, bias_Y)
 
