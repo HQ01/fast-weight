@@ -1,6 +1,7 @@
 # TODO context GPU
 
 import cPickle as pickle
+import sys
 
 import minpy
 # minpy.set_global_policy(minpy.OnlyNumPyPolicy)
@@ -18,8 +19,10 @@ N_CLASSES = 10 # 10 digits
 INNER_LENGTH = 3
 model = FastWeightRNN(INPUT_SIZE, N_HIDDEN, N_CLASSES, INNER_LENGTH)
 initialize(model)
-# updater = Updater(model, 'sgd', {'learning_rate' : 0.001})
-updater = Updater(model, 'adam', {'learning_rate' : 0.001})
+LEARNING_RATE = float(sys.argv[1])
+# updater = Updater(model, 'sgd', {'learning_rate' : LEARNING_RATE})
+# updater = Updater(model, 'adam', {'learning_rate' : LEARNING_RATE})
+updater = Updater(model, 'adam', {'learning_rate' : LEARNING_RATE})
 
 training_X, training_Y = pickle.load(open('../associative_retrieval/training', 'rb'))
 validation_X, validation_Y = pickle.load(open('../associative_retrieval/validation', 'rb'))
@@ -55,7 +58,7 @@ predictions = model.forward(test_X, 'test')
 test_accuracy = accuracy(predictions, test_Y)
 '''
 
-'''
+path = 'retrieval-lr-%f'
 info_path = '%s-info' % path
 history = (
   test_accuracy,
@@ -63,4 +66,3 @@ history = (
   validation_accuracy_table,
 )
 pickle.dump(history, open(info_path, 'wb'))
-'''

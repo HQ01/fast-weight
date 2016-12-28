@@ -1,3 +1,6 @@
+# TODO initialization (paper)
+# TODO character embedding
+
 import mxnet
 import minpy.nn.layers as layers
 from minpy.nn.model import ModelBase
@@ -19,7 +22,6 @@ class FastWeightRNN(ModelBase):
     self._learning_rate = 0.5
     self._nonlinear = np.tanh
 
-    # TODO initialization (paper)
     self \
       .add_param(
         name        = 'WX',
@@ -36,7 +38,7 @@ class FastWeightRNN(ModelBase):
         init_config = {'function' : lambda shape : np0.identity(n_hidden)}
       ) \
       .add_param(
-        name        ='b',
+        name        = 'bias_h',
         shape       = (n_hidden,),
         init_rule   = 'constant',
         init_config = {'value' : 0}
@@ -54,8 +56,20 @@ class FastWeightRNN(ModelBase):
         init_config = {'value' : 0}
       ) \
       .add_param(
+        name        = 'WY0',
+        shape       = (n_hidden, 100),
+        init_rule   = 'xavier',
+        init_config = {}
+      )\
+      .add_param(
+        name        = 'bias_Y0',
+        shape       = (100,),
+        init_rule   = 'constant',
+        init_config = {'value' : 0}
+      ) \
+      .add_param(
         name        = 'WY',
-        shape       = (n_hidden, n_classes),
+        shape       = (100, n_classes),
         init_rule   = 'xavier',
         init_config = {}
       )\
@@ -86,23 +100,26 @@ class FastWeightRNN(ModelBase):
     return hs
 
   def forward(self, X, mode):
-    # A is not computed
     N, sequence_length, D = X.shape
     h = np.zeros((N, self._n_hidden))
 
-    WX     = self.params['WX']
-    Wh     = self.params['Wh']
-    bias   = self.params['b']
-    WY     = self.params['WY']
-    bias_Y = self.params['bias_Y']
+    WX      = self.params['WX']
+    Wh      = self.params['Wh']
+    bias_h  = self.params['bias_h']
+    WY      = self.params['WY']
+    bias_Y  = self.params['bias_Y']
+    WY0     = self.params['WY0']
+    bias_Y0 = self.params['bias_Y0']
 
     previous_h = [h]
     for t in xrange(sequence_length):
-      h = self._update_h(X[:, t, :], h, WX, Wh, bias)
+      h = self._update_h(X[:, t, :], h, WX, Wh, bias_h)
       h = self._inner_loop(X[:, t, :], previous_h[-1], h, WX, Wh, previous_h)
       previous_h.append(h)
 
-    return layers.affine(h, WY, bias_Y)
+    Y0 = layers.relu(layers.affine(h, WY, bias_Y))
+    Y = layers.affine(Y0, WY, bias_Y)
+    return Y
 
   def loss(self, prediction, Y):
     return layers.softmax_loss(prediction, Y)
