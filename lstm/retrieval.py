@@ -1,4 +1,5 @@
 # TODO context GPU
+  test_accuracy,
 
 import cPickle as pickle
 
@@ -27,7 +28,7 @@ BATCH_SIZE = 128
 X_batches = Batches(training_X, BATCH_SIZE)
 Y_batches = Batches(training_Y, BATCH_SIZE)
 
-ITERATIONS = 800000
+ITERATIONS = 80
 LOGGING_INTERVAL = 10
 VALIDATION_INTERVAL = 50
 loss_table = []
@@ -55,12 +56,9 @@ predictions = model.forward(test_X, 'test')
 test_accuracy = accuracy(predictions, test_Y)
 '''
 
-'''
 info_path = '%s-info' % path
 history = (
-  test_accuracy,
   loss_table,
   validation_accuracy_table,
 )
 pickle.dump(history, open(info_path, 'wb'))
-'''

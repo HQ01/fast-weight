@@ -8,6 +8,7 @@ import minpy.numpy as np
 import minpy.numpy.random as random
 import numpy as np0
 
+from custom_layers import *
 from facility import *
 
 class FastWeightRNN(ModelBase):
@@ -18,7 +19,7 @@ class FastWeightRNN(ModelBase):
     self._n_hidden = n_hidden
     self._n_classes = n_classes
 
-    self._decay_rate = 0.95
+    self._decay_rate = 0.9
     self._learning_rate = 0.5
     self._nonlinear = np.tanh
 
@@ -35,7 +36,7 @@ class FastWeightRNN(ModelBase):
         name        = 'Wh',
         shape       = (n_hidden, n_hidden),
         init_rule   = 'custom',
-        init_config = {'function' : lambda shape : np0.identity(n_hidden)}
+        init_config = {'function' : lambda shape : np0.identity(n_hidden) * 0.05}
       ) \
       .add_param(
         name        = 'bias_h',
@@ -91,7 +92,7 @@ class FastWeightRNN(ModelBase):
     hs = h0
     for s in xrange(self._inner_length):
       projected_hs = self._learning_rate * sum(
-        self._decay_rate ** (len(previous_h) - t - 1) * diagonal(np.dot(h, hs.T)) * h
+        self._decay_rate ** (len(previous_h) - t - 1) * np.dot(diagonal(np.dot(h, hs.T)), h)
           for t, h in enumerate(previous_h)
       )
       hs = np.dot(X, WX) + np.dot(h, Wh) + projected_hs
@@ -117,7 +118,7 @@ class FastWeightRNN(ModelBase):
       h = self._inner_loop(X[:, t, :], previous_h[-1], h, WX, Wh, previous_h)
       previous_h.append(h)
 
-    Y0 = layers.relu(layers.affine(h, WY, bias_Y))
+    Y0 = layers.relu(layers.affine(h, WY0, bias_Y0))
     Y = layers.affine(Y0, WY, bias_Y)
     return Y
 

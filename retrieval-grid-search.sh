@@ -1,10 +1,8 @@
 # learning rate
-lr=0.1
-for ((i=0; i!=3; i++))
+for lr in 0.03 0.02 0.01 0.008
 do
-  let lr=lr*0.5 # TODO
-  echo $lr
-# ipython $1/retrieval.py $lr
+  ipython retrieval.py $lr &
 done
+wait
 
 # inner loop

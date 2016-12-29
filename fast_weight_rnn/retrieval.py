@@ -16,21 +16,23 @@ from rnn import FastWeightRNN
 INPUT_SIZE = 128
 N_HIDDEN = 100
 N_CLASSES = 10 # 10 digits
-INNER_LENGTH = 3
+INNER_LENGTH = 1
 model = FastWeightRNN(INPUT_SIZE, N_HIDDEN, N_CLASSES, INNER_LENGTH)
 initialize(model)
 LEARNING_RATE = float(sys.argv[1])
+print LEARNING_RATE
 # updater = Updater(model, 'sgd', {'learning_rate' : LEARNING_RATE})
 # updater = Updater(model, 'adam', {'learning_rate' : LEARNING_RATE})
 updater = Updater(model, 'adam', {'learning_rate' : LEARNING_RATE})
 
 training_X, training_Y = pickle.load(open('../associative_retrieval/training', 'rb'))
 validation_X, validation_Y = pickle.load(open('../associative_retrieval/validation', 'rb'))
+validation_X, validation_Y = validation_X[:1000], validation_Y[:1000]
 BATCH_SIZE = 128
 X_batches = Batches(training_X, BATCH_SIZE)
 Y_batches = Batches(training_Y, BATCH_SIZE)
 
-ITERATIONS = 20000
+ITERATIONS = 2000
 LOGGING_INTERVAL = 10
 VALIDATION_INTERVAL = 50
 loss_table = []
@@ -58,11 +60,10 @@ predictions = model.forward(test_X, 'test')
 test_accuracy = accuracy(predictions, test_Y)
 '''
 
-path = 'retrieval-lr-%f'
+path = 'info/retrieval-hidden-%d-lr-%3f' % (N_HIDDEN, LEARNING_RATE)
 info_path = '%s-info' % path
 history = (
-  test_accuracy,
-  loss_table,
   validation_accuracy_table,
+  loss_table,
 )
 pickle.dump(history, open(info_path, 'wb'))
