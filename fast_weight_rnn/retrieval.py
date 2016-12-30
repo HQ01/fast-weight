@@ -14,7 +14,7 @@ from solver_primitives import *
 from rnn import FastWeightRNN
 
 INPUT_SIZE = 128
-N_HIDDEN = 100
+N_HIDDEN = 20
 N_CLASSES = 10 # 10 digits
 INNER_LENGTH = 1
 model = FastWeightRNN(INPUT_SIZE, N_HIDDEN, N_CLASSES, INNER_LENGTH)
@@ -60,10 +60,13 @@ predictions = model.forward(test_X, 'test')
 test_accuracy = accuracy(predictions, test_Y)
 '''
 
-path = 'info/retrieval-hidden-%d-lr-%3f' % (N_HIDDEN, LEARNING_RATE)
-info_path = '%s-info' % path
+path = 'retrieval-hidden-%d-lr-%3f' % (N_HIDDEN, LEARNING_RATE)
+info_path = 'info/%s-info' % path
 history = (
-  validation_accuracy_table,
-  loss_table,
+  tuple(validation_accuracy_table),
+  tuple(loss_table),
 )
 pickle.dump(history, open(info_path, 'wb'))
+parameters = {key : to_np(value) for key, value in model.params.items()}
+parameter_path = 'parameters/%s-parameters' % path
+pickle.dump(parameters, open(parameter_path, 'wb'))

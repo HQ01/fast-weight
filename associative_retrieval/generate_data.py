@@ -29,10 +29,10 @@ def generate_data(n_samples, length, dimension):
   Y = values - ord('0')
   return X, Y
 
-def reconstruct(X, Y, dimension):
+def reconstruct(X, Y):
   L, D = X.shape
   X = ''.join(chr(np.argmax(X[i])) for i in range(L))
-  Y = chr(Y)
+  Y = chr(int(Y) + ord('0'))
   return X, Y
 
 training_X, training_Y = generate_data(n_training_samples, length, dimension)

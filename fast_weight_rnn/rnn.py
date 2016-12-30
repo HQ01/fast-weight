@@ -112,11 +112,11 @@ class FastWeightRNN(ModelBase):
     WY0     = self.params['WY0']
     bias_Y0 = self.params['bias_Y0']
 
-    previous_h = [h]
+    self.previous_h = [h]
     for t in xrange(sequence_length):
       h = self._update_h(X[:, t, :], h, WX, Wh, bias_h)
-      h = self._inner_loop(X[:, t, :], previous_h[-1], h, WX, Wh, previous_h)
-      previous_h.append(h)
+      h = self._inner_loop(X[:, t, :], self.previous_h[-1], h, WX, Wh, self.previous_h)
+      self.previous_h.append(h)
 
     Y0 = layers.relu(layers.affine(h, WY0, bias_Y0))
     Y = layers.affine(Y0, WY, bias_Y)
