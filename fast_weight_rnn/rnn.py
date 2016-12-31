@@ -36,7 +36,7 @@ class FastWeightRNN(ModelBase):
         name        = 'Wh',
         shape       = (n_hidden, n_hidden),
         init_rule   = 'custom',
-        init_config = {'function' : lambda shape : np0.identity(n_hidden) * 0.05}
+        init_config = {'function' : lambda shape : identity(n_hidden) * 0.05}
       ) \
       .add_param(
         name        = 'bias_h',
@@ -85,6 +85,7 @@ class FastWeightRNN(ModelBase):
     next_h = self._nonlinear(np.dot(X, WX) + np.dot(previous_h, Wh) + bias)
     return next_h
 
+
   def _inner_loop(self, X, h, h0, WX, Wh, previous_h):
     # TODO efficiency
     N, H = h.shape
@@ -112,11 +113,10 @@ class FastWeightRNN(ModelBase):
     WY0     = self.params['WY0']
     bias_Y0 = self.params['bias_Y0']
 
-    self.previous_h = [h]
     for t in xrange(sequence_length):
-      h = self._update_h(X[:, t, :], h, WX, Wh, bias_h)
-      h = self._inner_loop(X[:, t, :], self.previous_h[-1], h, WX, Wh, self.previous_h)
-      self.previous_h.append(h)
+      X_t = X[:, t, :]
+      h = self._update_h(X_t, h, WX, Wh, bias_h)
+      h = self._inner_loop(X_t, self.previous_h[-1], h, WX, Wh, self.previous_h)
 
     Y0 = layers.relu(layers.affine(h, WY0, bias_Y0))
     Y = layers.affine(Y0, WY, bias_Y)

@@ -4,10 +4,13 @@ import cPickle as pickle
 import sys
 
 import minpy
-# minpy.set_global_policy(minpy.OnlyNumPyPolicy)
+# minpy.set_global_policy(minpy.AutoBlacklistPolicy())
+# minpy.set_global_policy(minpy.OnlyNumPyPolicy())
+minpy.set_global_policy(minpy.PreferMXNetPolicy())
+# minpy.set_global_policy(minpy.OnlyMXNetPolicy())
 from minpy.context import set_context, cpu, gpu
-set_context(cpu())
-# set_context(gpu(0))
+# set_context(cpu())
+set_context(gpu(0))
 
 from facility import *
 from solver_primitives import *
@@ -19,6 +22,8 @@ N_CLASSES = 10 # 10 digits
 INNER_LENGTH = 1
 model = FastWeightRNN(INPUT_SIZE, N_HIDDEN, N_CLASSES, INNER_LENGTH)
 initialize(model)
+for key, value in model.params.items():
+  print key, value.context
 LEARNING_RATE = float(sys.argv[1])
 print LEARNING_RATE
 # updater = Updater(model, 'sgd', {'learning_rate' : LEARNING_RATE})
