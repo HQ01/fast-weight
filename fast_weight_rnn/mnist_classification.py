@@ -1,8 +1,3 @@
-# TODO context GPU
-
-import cPickle as pickle
-import sys
-
 import minpy
 # minpy.set_global_policy(minpy.AutoBlacklistPolicy())
 # minpy.set_global_policy(minpy.OnlyNumPyPolicy())
@@ -16,23 +11,23 @@ from facility import *
 from solver_primitives import *
 from rnn import FastWeightRNN
 
-INPUT_SIZE = 128
-N_HIDDEN = 20
+import sys
+sys.path.append('../../mnist/utilities')
+from data_utility import load_mnist
+
+INPUT_SIZE = 4 * 28
+N_HIDDEN = 200
 N_CLASSES = 10 # 10 digits
 INNER_LENGTH = 1
 model = FastWeightRNN(INPUT_SIZE, N_HIDDEN, N_CLASSES, INNER_LENGTH)
 initialize(model)
-'''
-for key, value in model.params.items():
-  print key, value.context
-'''
-LEARNING_RATE = float(sys.argv[1])
-# print LEARNING_RATE
-# updater = Updater(model, 'sgd', {'learning_rate' : LEARNING_RATE})
-updater = Updater(model, 'adam', {'learning_rate' : LEARNING_RATE})
 
-training_X, training_Y = pickle.load(open('../associative_retrieval/training', 'rb'))
-validation_X, validation_Y = pickle.load(open('../associative_retrieval/validation', 'rb'))
+LEARNING_RATE = float(sys.argv[1])
+updater = Updater(model, 'sgd', {'learning_rate' : LEARNING_RATE})
+# updater = Updater(model, 'adam', {'learning_rate' : LEARNING_RATE})
+
+training_X, training_Y, validation_X, validation_Y, test_X, test_Y = \
+  load_mnist('../../mnist/utilities', shape=(7, 4 * 28))
 validation_X, validation_Y = validation_X[:1000], validation_Y[:1000]
 BATCH_SIZE = 128
 X_batches = Batches(training_X, BATCH_SIZE)
@@ -60,19 +55,3 @@ for i in range(ITERATIONS):
     validation_accuracy = accuracy(predictions, validation_Y)
     print 'iteration %d validation accuracy %f' % (i + 1, validation_accuracy)
     validation_accuracy_table.append(validation_accuracy)
-
-'''
-predictions = model.forward(test_X, 'test')
-test_accuracy = accuracy(predictions, test_Y)
-'''
-
-path = 'retrieval-hidden-%d-lr-%3f' % (N_HIDDEN, LEARNING_RATE)
-info_path = 'info/%s-info' % path
-history = (
-  tuple(validation_accuracy_table),
-  tuple(loss_table),
-)
-pickle.dump(history, open(info_path, 'wb'))
-parameters = {key : to_np(value) for key, value in model.params.items()}
-parameter_path = 'parameters/%s-parameters' % path
-pickle.dump(parameters, open(parameter_path, 'wb'))
