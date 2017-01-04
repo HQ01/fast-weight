@@ -19,28 +19,23 @@ class FastWeightRNN(ModelBase):
     self._n_classes = n_classes
 
     self._learning_rate = 0.5
-    self._decay_rate = 0.5
-#   self._learning_rate = 0.5
-#   self._decay_rate = 0.9
+    self._decay_rate = 0.9
     self._nonlinear = np.tanh
 
     self \
       .add_param(
         name        = 'WX',
         shape       = (input_size, n_hidden),
-        init_rule   = 'xavier',
-        init_config = {}
-#        init_rule   = 'custom',
-#        init_config = {
-#          'function' : lambda shape : np.random.uniform(-n_hidden ** 0.5, n_hidden ** 0.5, shape)
-#        }
+        init_rule   = 'custom',
+        init_config = {
+          'function' : lambda shape : np.random.uniform(-n_hidden ** 0.5, n_hidden ** 0.5, shape)
+        }
       ) \
       .add_param(
         name        = 'Wh',
         shape       = (n_hidden, n_hidden),
         init_rule   = 'custom',
-        init_config = {'function' : lambda shape : identity(n_hidden) * 0.01}
-#       init_config = {'function' : lambda shape : identity(n_hidden) * 0.05}
+        init_config = {'function' : lambda shape : identity(n_hidden) * 0.05}
       ) \
       .add_param(
         name        = 'bias_h',
@@ -106,11 +101,6 @@ class FastWeightRNN(ModelBase):
         self._decay_rate ** (len(previous_h) - t - 1) * batch_scalar_product(h, hs) * h
           for t, h in enumerate(previous_h)
       )
-      print 'boundary_condition', np.min(boundary_condition), np.max(boundary_condition)
-      print 'projected_hs', np.min(projected_hs), np.max(projected_hs)
-      '''
-      raise Exception()
-      '''
       hs = boundary_condition + projected_hs
       hs = layer_normalization(hs, gamma, beta)
       hs = self._nonlinear(hs)

@@ -23,8 +23,8 @@ model = FastWeightRNN(INPUT_SIZE, N_HIDDEN, N_CLASSES, INNER_LENGTH)
 initialize(model)
 
 LEARNING_RATE = float(sys.argv[1])
-updater = Updater(model, 'sgd', {'learning_rate' : LEARNING_RATE})
-# updater = Updater(model, 'adam', {'learning_rate' : LEARNING_RATE})
+# updater = Updater(model, 'sgd', {'learning_rate' : LEARNING_RATE})
+updater = Updater(model, 'adam', {'learning_rate' : LEARNING_RATE})
 
 training_X, training_Y, validation_X, validation_Y, test_X, test_Y = \
   load_mnist('../../mnist/utilities', shape=(7, 4 * 28))

@@ -34,7 +34,7 @@ updater = Updater(model, 'adam', {'learning_rate' : LEARNING_RATE})
 training_X, training_Y = pickle.load(open('../associative_retrieval/training', 'rb'))
 validation_X, validation_Y = pickle.load(open('../associative_retrieval/validation', 'rb'))
 validation_X, validation_Y = validation_X[:1000], validation_Y[:1000]
-BATCH_SIZE = 128
+BATCH_SIZE = 64
 X_batches = Batches(training_X, BATCH_SIZE)
 Y_batches = Batches(training_Y, BATCH_SIZE)
 
