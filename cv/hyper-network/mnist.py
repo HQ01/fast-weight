@@ -8,8 +8,7 @@ from facility import load_mnist
 from mx_layers import *
 from mx_solver import MXSolver
 
-try: mode = sys.argv[1]
-except: mode = 'hyper'
+mode = 'hyper'
 
 network = variable('data')
 network = convolution(network, (7, 7), 16, (1, 1), (3, 3))
@@ -34,7 +33,6 @@ else:
   weight = swap_axes(weight, 0, 1)
 
 network = convolution(network, (7, 7), 16, (1, 1), (3, 3), weight=weight)
-# network = convolution(network, (7, 7), 16, (1, 1), (3, 3))
 network = ReLU(network)
 network = pooling(network, 'maximum', (2, 2), (2, 2))
 network = flatten(network)
@@ -67,8 +65,9 @@ solver = MXSolver(
   verbose = False,
 )
 
-identifier = 'mnist-%s-network' % mode
 info = solver.train(data)
+
+identifier = 'mnist-%s-network' % mode
 pickle.dump(info, open('info/%s' % identifier, 'wb'))
 parameters = solver.export_parameters()
 pickle.dump(parameters, open('parameters/%s' % identifier, 'wb'))
