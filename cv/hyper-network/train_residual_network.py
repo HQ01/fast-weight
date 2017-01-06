@@ -4,7 +4,7 @@ import sys
 
 from lr_scheduler import AtEpochScheduler, AtIterationScheduler
 from data_utilities import load_cifar10_record
-from mxnet.initializer import Xavier
+from mxnet.initializer import Xavier, MSRAPrelu
 from mx_solver import MXSolver
 
 from residual_network import triple_state_residual_network
@@ -34,7 +34,7 @@ optimizer_settings = {
 solver = MXSolver(
   batch_size = BATCH_SIZE,
   devices = (0, 1, 2, 3),
-  epochs = 1,
+  epochs = 120,
   initializer = Xavier(),
   optimizer_settings = optimizer_settings,
   symbol = network,
@@ -43,7 +43,7 @@ solver = MXSolver(
 
 info = solver.train(data)
 
-identifier = 'triple-state-%s-residual-network' % MODES['mode'] # TODO
+identifier = 'triple-state-%s-residual-network-%d' % (MODES['mode'], N) # TODO
 pickle.dump(info, open('info/%s' % identifier, 'wb'))
 parameters = solver.export_parameters()
 pickle.dump(parameters, open('parameters/%s' % identifier, 'wb'))
