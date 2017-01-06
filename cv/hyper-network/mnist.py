@@ -18,6 +18,7 @@ network = pooling(network, 'maximum', (2, 2), (2, 2))
 if mode == 'normal':
   weight = variable('convolution1_weight', shape=())
 else:
+  # TODO function
   # weight shape (FILTER_OUT, FILTER_IN, WIDTH, HEIGHT)
   N_z = 4
   d = N_z
@@ -52,7 +53,7 @@ lr = 0.005
 optimizer_settings = {
   'initial_lr' : lr,
   'optimizer'  : 'Adam',
-  'lr_scheduler' : FactorScheduler(lr, 0.99, data[0].shape[0] // BATCH_SIZE),
+  'lr_scheduler' : FactorScheduler(lr, 0.99, data[0].shape[0], BATCH_SIZE),
 }
 
 solver = MXSolver(
@@ -62,7 +63,7 @@ solver = MXSolver(
   initializer = Initializer(),
   optimizer_settings = optimizer_settings,
   symbol = network,
-  verbose = False,
+  verbose = True,
 )
 
 info = solver.train(data)

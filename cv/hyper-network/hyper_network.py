@@ -8,11 +8,11 @@ def generated_convolution_weight(*args):
 class _generated_convolution_weight:
   _n = 0
   @staticmethod
-  def _(N_z, d, filter_in, filter_out, width, height):
+  def _(N_z, d, filter_in, filter_out, width, height, embedding=None):
     # TODO layer name
-    n = generated_convolution_weight._n
-    weight = variable('convolution_embedding%d_weight' % n)
-    generated_convolution_weight._n += 1
+    n = _generated_convolution_weight._n
+    weight = variable('convolution_embedding%d_weight' % n, shape=(N_z,)) if embedding is None else embedding
+    _generated_convolution_weight._n += 1
     weight = fully_connected(weight, filter_in * d)
     weight = reshape(weight, (filter_in, d))
     weight = fully_connected(weight, filter_out * width * height)
