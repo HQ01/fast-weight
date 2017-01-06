@@ -5,6 +5,7 @@ import sys
 from lr_scheduler import AtEpochScheduler, AtIterationScheduler
 from data_utilities import load_cifar10_record
 from mxnet.initializer import Xavier, MSRAPrelu
+from mx_initializer import PReLUInitializer
 from mx_solver import MXSolver
 
 from residual_network import triple_state_residual_network
@@ -16,8 +17,8 @@ MODES = {'mode' : 'normal'}
 N = int(sys.argv[1])
 network = triple_state_residual_network(N, **MODES)
 
-lr = 0.01
-lr_table = {32000 : 0.005, 48000 : 0.001}
+lr = 0.02
+lr_table = {32000 : lr * 0.1, 48000 : lr * 0.01}
 
 data = load_cifar10_record(BATCH_SIZE)
 n_training_samples = data[0].shape[0] if isinstance(data, np0.ndarray) else 50000 # TODO
@@ -33,8 +34,8 @@ optimizer_settings = {
 solver = MXSolver(
   batch_size = BATCH_SIZE,
   devices = (0, 1, 2, 3),
-  epochs = 120,
-  initializer = Xavier(),
+  epochs = 150,
+  initializer = PReLUInitializer(),
   optimizer_settings = optimizer_settings,
   symbol = network,
   verbose = True,

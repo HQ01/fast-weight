@@ -5,7 +5,7 @@ from hyper_network import *
 def _normalized_convolution(X, kernel_shape, n_kernels, stride, pad, weight=None, bias=None):
   # TODO BN settings
   network = convolution(X, kernel_shape, n_kernels, stride, pad, weight=weight, bias=bias)
-  network = batch_normalization(network)
+  network = batch_normalization(network, fix_gamma=False)
   network = ReLU(network)
   return network
 
