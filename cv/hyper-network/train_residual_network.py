@@ -8,12 +8,12 @@ from mx_solver import MXSolver
 
 from residual_network import triple_state_residual_network
 
-N = 3
-# MODE = 'normal'
-MODE = 'hyper'
-network = triple_state_residual_network(N, MODE)
-
 BATCH_SIZE = 128
+N = 3
+MODES = {'mode' : 'normal'}
+MODES = {'mode' : 'hyper', 'embedding' : 'feature_map', 'batch_size' : BATCH_SIZE}
+network = triple_state_residual_network(N, **MODES)
+
 lr = 0.05
 # lr_table = {15 : 0.001, 30 : 0.0001}
 lr_table = {32000 : 0.01, 48000 : 0.001}
