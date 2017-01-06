@@ -1,6 +1,6 @@
 import mxnet as mx
 from mx_layers import *
-from hyper_network import generated_convolution_weight
+from hyper_network import *
 
 def _normalized_convolution(X, kernel_shape, n_kernels, stride, pad, weight=None, bias=None):
   # TODO BN settings
@@ -20,7 +20,7 @@ def _transit(X, n_kernels):
 
 def _recur(X, n_kernels, weight=None, bias=None):
   residual = _normalized_convolution(X, (_WIDTH, _HEIGHT), n_kernels, (1, 1), (1, 1), weight=weight, bias=bias)
-  residual = /
+  residual = \
     _normalized_convolution(residual, (_WIDTH, _HEIGHT), n_kernels, (1, 1), (1, 1), weight=weight, bias=bias)
   return X + residual
 
@@ -34,7 +34,7 @@ def triple_state_residual_network(n, **kwargs):
     if mode == 'normal': return None
     elif mode == 'hyper':
       if kwargs['embedding'] == 'feature_map':
-        embedding = generated_convolution_embedding(network, (_WIDTH, _HEIGHT), kwargs['batch_size']
+        embedding = generated_convolution_embedding(network, (_WIDTH, _HEIGHT), kwargs['batch_size'])
       if kwargs['embedding'] == 'parameter':
         embedding = N_z
       weight = generated_convolution_weight(embedding, d, filter_in, filter_out, _WIDTH, _HEIGHT)
