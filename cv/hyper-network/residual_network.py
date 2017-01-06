@@ -29,16 +29,20 @@ def triple_state_residual_network(n, **kwargs):
   N_z = 64
   d = N_z
   global _WIDTH, _HEIGHT
-  
+
+  module_index = 0
   def _generate_weight(filter_in, filter_out):
     if mode == 'normal': return None
+    elif mode == 'weight-sharing':
+      weight = variable('shared_convolution_weight%d' % module_index)
+      module_index += 1
+      return weight
     elif mode == 'hyper':
       if kwargs['embedding'] == 'feature_map':
         embedding = generated_convolution_embedding(network, (_WIDTH, _HEIGHT), kwargs['batch_size'])
       if kwargs['embedding'] == 'parameter':
         embedding = N_z
-      weight = generated_convolution_weight(embedding, d, filter_in, filter_out, _WIDTH, _HEIGHT)
-    return weight
+      return generated_convolution_weight(embedding, d, filter_in, filter_out, _WIDTH, _HEIGHT)
 
   network = variable('data')
 

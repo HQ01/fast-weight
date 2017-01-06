@@ -11,12 +11,12 @@ from residual_network import triple_state_residual_network
 
 BATCH_SIZE = 128
 MODES = {'mode' : 'normal'}
+# MODES = {'mode' : 'weight-sharing'}
 # MODES = {'mode' : 'hyper', 'embedding' : 'feature_map', 'batch_size' : BATCH_SIZE}
 N = int(sys.argv[1])
 network = triple_state_residual_network(N, **MODES)
 
 lr = 0.01
-# lr_table = {15 : 0.001, 30 : 0.0001}
 lr_table = {32000 : 0.005, 48000 : 0.001}
 
 data = load_cifar10_record(BATCH_SIZE)
@@ -25,7 +25,6 @@ n_training_samples = data[0].shape[0] if isinstance(data, np0.ndarray) else 5000
 optimizer_settings = {
   'args'         : {'momentum' : 0.9},
   'initial_lr'   : lr,
-# 'lr_scheduler' : AtEpochScheduler(lr, lr_table, n_training_samples, BATCH_SIZE), # TODO
   'lr_scheduler' : AtIterationScheduler(lr, lr_table),
   'optimizer'    : 'SGD',
   'weight_decay' : 0.0001,
@@ -43,7 +42,9 @@ solver = MXSolver(
 
 info = solver.train(data)
 
-identifier = 'triple-state-%s-residual-network-%d' % (MODES['mode'], N) # TODO
+# TODO
+identifier = 'triple-state-%s-residual-network-%d' % (MODES['mode'], N) 
+# identifier = 'triple-state-%s-residual-network-%d-%s-embedding' % (MODES['mode'], N, MODES['embedding'])
 pickle.dump(info, open('info/%s' % identifier, 'wb'))
 parameters = solver.export_parameters()
 pickle.dump(parameters, open('parameters/%s' % identifier, 'wb'))
