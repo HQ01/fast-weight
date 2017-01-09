@@ -1,25 +1,19 @@
 import cPickle as pickle
 import numpy as np0
-import sys
 
-from lr_scheduler import AtEpochScheduler, AtIterationScheduler
+from lr_scheduler import AtIterationScheduler
 from data_utilities import load_cifar10_record
-from mxnet.initializer import Xavier, MSRAPrelu
 from mx_initializer import PReLUInitializer
 from mx_solver import MXSolver
 
 from residual_network import triple_state_residual_network
 
-BATCH_SIZE = 128
-# MODES = {'mode' : 'normal'}
-MODES = {'mode' : 'weight-sharing'}
-# MODES = {'mode' : 'hyper', 'embedding' : 'feature_map', 'batch_size' : BATCH_SIZE}
-N = int(sys.argv[1])
-network = triple_state_residual_network(N, **MODES)
+network = triple_state_residual_network(1, mode='normal')
 
 lr = 0.1
 lr_table = {32000 : lr * 0.1, 48000 : lr * 0.01}
 
+BATCH_SIZE = 128
 data = load_cifar10_record(BATCH_SIZE)
 
 optimizer_settings = {
@@ -42,11 +36,14 @@ solver = MXSolver(
 
 info = solver.train(data)
 
-# TODO
-identifier = 'triple-state-%s-residual-network-%d' % (MODES['mode'], N) 
-# identifier = 'triple-state-%s-residual-network-%d-%s-embedding' % (MODES['mode'], N, MODES['embedding'])
+identifier = 'triple-state-transitory-residual-network'
 pickle.dump(info, open('info/%s' % identifier, 'wb'))
-parameters = solver.export_parameters()
-for p in sorted(parameters[0].keys()):
-  print p
-pickle.dump(parameters, open('parameters/%s' % identifier, 'wb'))
+
+parameters, states = solver.export_parameters()
+arguments = {}
+for key, value in parameters.items():
+  if 'transition' in key: arguments[key] = value
+for key, value in states.items():
+  if 'transition' in key: arguments[key] = value
+print sorted(arguments.key())
+pickle.dump(arguments, open('parameters/%s' % identifier, 'wb'))
