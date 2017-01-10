@@ -19,13 +19,12 @@ network = triple_state_residual_network(N, **MODES)
 BATCH_SIZE = 128
 data = load_cifar10_record(BATCH_SIZE)
 
+transitory_parameters, transitory_states = \
+  pickle.load(open('parameters/triple-state-transitory-residual-network', 'rb'))
 initializer = HybridInitializer(
-  pickle.load(open('parameters/triple-state-transitory-residual-network', 'rb')),
+  transitory_parameters,
   PReLUInitializer()
 )
-'''
-initializer = PReLUInitializer() 
-'''
 
 lr = 0.1
 lr_table = {32000 : lr * 0.1, 48000 : lr * 0.01}
@@ -39,18 +38,20 @@ optimizer_settings = {
 }
 
 solver = MXSolver(
-  batch_size = BATCH_SIZE,
-  devices = (0, 1, 2, 3),
-  epochs = 150,
-  initializer = initializer,
-  optimizer_settings = optimizer_settings,
-  symbol = network,
-  verbose = True,
+  auxiliary_states    = transitory_states,
+  batch_size          = BATCH_SIZE,
+  constant_parameters = transitory_parameters,
+  devices             = (0, 1, 2, 3),
+  epochs              = 150,
+  initializer         = initializer,
+  optimizer_settings  = optimizer_settings,
+  symbol              = network,
+  verbose             = True,
 )
 
 info = solver.train(data)
 
-identifier = 'triple-state-refined-residual-network'
+identifier = 'triple-state-refined-residual-network-%d' % N
 pickle.dump(info, open('info/%s' % identifier, 'wb'))
 parameters = solver.export_parameters()
 pickle.dump(parameters, open('parameters/%s' % identifier, 'wb'))

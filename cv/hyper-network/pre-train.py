@@ -1,5 +1,6 @@
 import cPickle as pickle
 import numpy as np0
+import sys
 
 from lr_scheduler import AtIterationScheduler
 from data_utilities import load_cifar10_record
@@ -27,7 +28,7 @@ optimizer_settings = {
 solver = MXSolver(
   batch_size = BATCH_SIZE,
   devices = (0, 1, 2, 3),
-  epochs = 1,
+  epochs = int(sys.argv[1]),
   initializer = PReLUInitializer(),
   optimizer_settings = optimizer_settings,
   symbol = network,
@@ -40,10 +41,6 @@ identifier = 'triple-state-transitory-residual-network'
 pickle.dump(info, open('info/%s' % identifier, 'wb'))
 
 parameters, states = solver.export_parameters()
-arguments = {}
-for key, value in parameters.items():
-  if 'transition' in key: arguments[key] = value
-for key, value in states.items():
-  if 'transition' in key: arguments[key] = value
-print sorted(arguments.key())
-pickle.dump(arguments, open('parameters/%s' % identifier, 'wb'))
+parameters = {key : value for key, value in parameters.items() if 'transition' in key}
+states = {key : value for key, value in states.items() if 'transition' in key}
+pickle.dump((parameters, states), open('parameters/%s' % identifier, 'wb'))
