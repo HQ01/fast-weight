@@ -21,6 +21,12 @@ data = load_cifar10_record(BATCH_SIZE)
 
 transitory_parameters, transitory_states = \
   pickle.load(open('parameters/triple-state-transitory-residual-network', 'rb'))
+# TODO
+'''
+transitory_parameters.pop('linear_transformation_weight')
+transitory_parameters.pop('linear_transformation_bias')
+'''
+
 initializer = HybridInitializer(
   transitory_parameters,
   PReLUInitializer()

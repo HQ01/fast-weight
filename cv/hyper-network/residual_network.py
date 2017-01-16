@@ -80,6 +80,6 @@ def triple_state_residual_network(n, **kwargs):
 
   network = pooling(X=network, mode='average', kernel_shape=(8, 8), stride=(1, 1), pad=(0, 0))
   network = flatten(network)
-  network = fully_connected(network, 10)
+  network = fully_connected(X=network, n_hidden_units=10, name='linear_transition')
   network = softmax_loss(network, normalization='batch')
   return network
