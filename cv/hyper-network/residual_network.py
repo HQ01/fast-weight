@@ -83,3 +83,21 @@ def triple_state_residual_network(n, **kwargs):
   network = fully_connected(X=network, n_hidden_units=10, name='linear_transition')
   network = softmax_loss(network, normalization='batch')
   return network
+
+def _normal_transition(X, n_filters, index):
+  # exclude identity connection
+  name = 'transition%d' % index
+  network = _normalized_convolution(X, (_WIDTH, _HEIGHT), n_filters, (2, 2), (1, 1), name='%s_convolution0' % name)
+  network = _normalized_convolution(network, (_WIDTH, _HEIGHT), n_filters, (1, 1), (1, 1), name='%s_convolution1' % name)
+  return network
+
+def transitional_network():
+  network = variable('data')
+  network = _normalized_convolution(network, (_WIDTH, _HEIGHT), 16, (1, 1), (1, 1), name='transition0')
+  network = _normal_transition(network, 32, 1)
+  network = _normal_transition(network, 64, 2)
+  network = pooling(X=network, mode='average', kernel_shape=(8, 8), stride=(1, 1), pad=(0, 0))
+  network = flatten(network)
+  network = fully_connected(X=network, n_hidden_units=10, name='linear_transition')
+  network = softmax_loss(network, normalization='batch')
+  return network

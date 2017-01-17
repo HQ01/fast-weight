@@ -7,9 +7,10 @@ from data_utilities import load_cifar10_record
 from mx_initializer import PReLUInitializer
 from mx_solver import MXSolver
 
-from residual_network import triple_state_residual_network
+from residual_network import triple_state_residual_network, transitional_network
 
 network = triple_state_residual_network(1, mode='normal')
+# network = transitional_network()
 
 lr = 0.1
 lr_table = {32000 : lr * 0.1, 48000 : lr * 0.01}

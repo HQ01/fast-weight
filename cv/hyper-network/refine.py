@@ -43,10 +43,12 @@ optimizer_settings = {
   'weight_decay' : 0.0001,
 }
 
+constant_transition = False
+
 solver = MXSolver(
   auxiliary_states    = transitory_states,
   batch_size          = BATCH_SIZE,
-  constant_parameters = transitory_parameters,
+# constant_parameters = transitory_parameters if constant_transition else [],
   devices             = (0, 1, 2, 3),
   epochs              = 150,
   initializer         = initializer,
@@ -58,6 +60,7 @@ solver = MXSolver(
 info = solver.train(data)
 
 identifier = 'triple-state-refined-residual-network-%d' % N
+if constant_transition: identifier += '-constant-transition'
 pickle.dump(info, open('info/%s' % identifier, 'wb'))
 parameters = solver.export_parameters()
 pickle.dump(parameters, open('parameters/%s' % identifier, 'wb'))
