@@ -13,6 +13,8 @@ from residual_network import triple_state_residual_network
 BATCH_SIZE = 128
 MODES = {'mode' : 'weight-sharing'}
 # MODES = {'mode' : 'hyper', 'embedding' : 'feature_map', 'batch_size' : BATCH_SIZE}
+constant_transition = True
+MODES['constant_transition'] = constant_transition
 N = int(sys.argv[1])
 network = triple_state_residual_network(N, **MODES)
 
@@ -43,12 +45,12 @@ optimizer_settings = {
   'weight_decay' : 0.0001,
 }
 
-constant_transition = False
+constant_parameters = transitory_parameters if constant_transition else None
 
 solver = MXSolver(
   auxiliary_states    = transitory_states,
   batch_size          = BATCH_SIZE,
-# constant_parameters = transitory_parameters if constant_transition else [],
+  constant_parameters = constant_parameters,
   devices             = (0, 1, 2, 3),
   epochs              = 150,
   initializer         = initializer,

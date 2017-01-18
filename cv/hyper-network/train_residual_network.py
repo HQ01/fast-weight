@@ -16,6 +16,7 @@ MODES = {'mode' : 'weight-sharing'}
 N = int(sys.argv[1])
 network = triple_state_residual_network(N, **MODES)
 
+# TODO
 if MODES['mode'] is 'normal':
   BATCH_SIZE = 128
   lr = 0.1
@@ -28,7 +29,7 @@ elif MODES['mode'] is 'weight-sharing':
   lr_table = {40 : 0.001, 50 : 0.0001}
   lr_scheduler = AtEpochScheduler(lr, lr_table, 50000, BATCH_SIZE)
   epochs = 60
-elif MODES['mode'] is 'hyper': pass # TODO
+elif MODES['mode'] is 'hyper': pass
 
 optimizer_settings = {
   'args'         : {'momentum' : 0.9},

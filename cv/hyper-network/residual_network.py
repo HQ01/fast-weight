@@ -2,7 +2,7 @@ import mxnet as mx
 from mx_layers import *
 from hyper_network import *
 
-def _normalized_convolution(X, kernel_shape, n_filters, stride, pad, weight=None, bias=None, name=None):
+def _normalized_convolution(X, kernel_shape, n_filters, stride, pad, weight=None, bias=None, name=None, constant=False):
   from mxnet.symbol import Convolution
   # TODO BN settings
   convolution_name = None if name is None else '%s_convolution' % name
@@ -17,6 +17,7 @@ def _normalized_convolution(X, kernel_shape, n_filters, stride, pad, weight=None
   }
   if weight is not None: kwargs['weight'] = weight
   if bias is not None: kwargs['bias'] = bias
+  if constant: kwargs['attribute'] = {'lr_mult' : '0.0'} 
   network = convolution(**kwargs)
   bn_name = None if name is None else '%s_bn' % name
   network = batch_normalization(network, fix_gamma=False, name=bn_name)
@@ -25,10 +26,10 @@ def _normalized_convolution(X, kernel_shape, n_filters, stride, pad, weight=None
 
 _WIDTH, _HEIGHT = 3, 3
 
-def _transit(X, n_filters, index):
+def _transit(X, n_filters, index, constant=False):
   name = 'transition%d' % index
-  P = _normalized_convolution(X, (_WIDTH, _HEIGHT), n_filters, (2, 2), (1, 1), name='%s_P0' % name)
-  P = _normalized_convolution(P, (_WIDTH, _HEIGHT), n_filters, (1, 1), (1, 1), name='%s_P1' % name)
+  P = _normalized_convolution(X, (_WIDTH, _HEIGHT), n_filters, (2, 2), (1, 1), name='%s_P0' % name, constant=constant)
+  P = _normalized_convolution(P, (_WIDTH, _HEIGHT), n_filters, (1, 1), (1, 1), name='%s_P1' % name, constant=constant)
   Q = pooling(X=X, mode='average', kernel_shape=(2, 2), stride=(2, 2), pad=(0, 0))
   pad_width = (0, 0, 0, n_filters / 2, 0, 0, 0, 0)
   Q = pad(Q, pad_width, 'constant')
@@ -42,6 +43,7 @@ def _recur(X, n_filters, weight=None, bias=None):
 
 def triple_state_residual_network(n, **kwargs):
   mode = kwargs['mode']
+  constant = kwargs.get('constant_transition', False)
   N_z = 64
   d = N_z
   global _WIDTH, _HEIGHT
@@ -64,23 +66,26 @@ def triple_state_residual_network(n, **kwargs):
   network = variable('data')
 
   FILTER_IN, FILTER_OUT = 16, 16
-  network = _normalized_convolution(network, (_WIDTH, _HEIGHT), FILTER_IN, (1, 1), (1, 1), name='transition0')
+  network = \
+    _normalized_convolution(network, (_WIDTH, _HEIGHT), FILTER_IN, (1, 1), (1, 1), name='transition0', constant=constant)
   weight, bias = _generate_parameters(FILTER_IN, FILTER_OUT, 0)
   for i in range(n): network = _recur(network, FILTER_OUT, weight=weight, bias=bias)
 
   FILTER_IN, FILTER_OUT = 32, 32
-  network = _transit(network, FILTER_IN, 1)
+  network = _transit(network, FILTER_IN, 1, constant)
   weight, bias = _generate_parameters(FILTER_IN, FILTER_OUT, 1)
   for i in range(n - 1): network = _recur(network, FILTER_OUT, weight=weight, bias=bias)
 
   FILTER_IN, FILTER_OUT = 64, 64
-  network = _transit(network, 64, 2)
+  network = _transit(network, FILTER_IN, 2, constant)
   weight, bias = _generate_parameters(FILTER_IN, FILTER_OUT, 2)
   for i in range(n - 1): network = _recur(network, 64, weight=weight, bias=bias)
 
   network = pooling(X=network, mode='average', kernel_shape=(8, 8), stride=(1, 1), pad=(0, 0))
   network = flatten(network)
-  network = fully_connected(X=network, n_hidden_units=10, name='linear_transition')
+  linear_transition_kwargs = {'X' : network, 'n_hidden_units' : 10, 'name' : 'linear_transition'}
+  if constant: linear_transition_kwargs['attribute'] = {'lr_mult' : '0.0'}
+  network = fully_connected(**linear_transition_kwargs)
   network = softmax_loss(network, normalization='batch')
   return network
 

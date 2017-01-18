@@ -9,7 +9,7 @@ from mx_solver import MXSolver
 
 from residual_network import triple_state_residual_network, transitional_network
 
-network = triple_state_residual_network(1, mode='normal')
+network = triple_state_residual_network(0, mode='normal')
 # network = transitional_network()
 
 lr = 0.1
