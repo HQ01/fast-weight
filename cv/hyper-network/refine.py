@@ -2,6 +2,7 @@
 import cPickle as pickle
 import numpy as np0
 import sys
+import mxnet as mx
 
 from lr_scheduler import AtIterationScheduler
 from data_utilities import load_cifar10_record
@@ -12,6 +13,7 @@ from residual_network import triple_state_residual_network
 
 BATCH_SIZE = 128
 MODES = {'mode' : 'weight-sharing'}
+# MODES = {'mode' : 'hyper', 'embedding' : 'parameter'}
 # MODES = {'mode' : 'hyper', 'embedding' : 'feature_map', 'batch_size' : BATCH_SIZE}
 constant_transition = True
 MODES['constant_transition'] = constant_transition
@@ -23,11 +25,6 @@ data = load_cifar10_record(BATCH_SIZE)
 
 transitory_parameters, transitory_states = \
   pickle.load(open('parameters/triple-state-transitory-residual-network', 'rb'))
-# TODO
-'''
-transitory_parameters.pop('linear_transformation_weight')
-transitory_parameters.pop('linear_transformation_bias')
-'''
 
 initializer = HybridInitializer(
   transitory_parameters,
@@ -61,8 +58,10 @@ solver = MXSolver(
 
 info = solver.train(data)
 
+'''
 identifier = 'triple-state-refined-residual-network-%d' % N
 if constant_transition: identifier += '-constant-transition'
 pickle.dump(info, open('info/%s' % identifier, 'wb'))
 parameters = solver.export_parameters()
 pickle.dump(parameters, open('parameters/%s' % identifier, 'wb'))
+'''

@@ -10,8 +10,8 @@ from mx_solver import MXSolver
 
 from residual_network import triple_state_residual_network
 
-# MODES = {'mode' : 'normal'}
-MODES = {'mode' : 'weight-sharing'}
+MODES = {'mode' : 'normal'}
+# MODES = {'mode' : 'weight-sharing'}
 # MODES = {'mode' : 'hyper', 'embedding' : 'feature_map', 'batch_size' : BATCH_SIZE}
 N = int(sys.argv[1])
 network = triple_state_residual_network(N, **MODES)

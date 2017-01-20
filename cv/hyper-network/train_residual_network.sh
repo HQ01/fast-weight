@@ -1,4 +1,5 @@
-for n in 3 5 7 9
+for ((N=1; N!=21; N++))
 do
-  ipython train_residual_network.py $n
+  echo N $N
+  ipython train_residual_network.py $N
 done

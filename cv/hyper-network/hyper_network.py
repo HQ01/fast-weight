@@ -22,9 +22,9 @@ class _generated_convolution_weight:
       weight = variable('convolution_embedding%d_weight' % n, shape=(embedding,))
     else: weight = embedding
     _generated_convolution_weight._n += 1
-    weight = fully_connected(weight, filter_in * d)
+    weight = fully_connected(X=weight, n_hidden_units=filter_in * d)
     weight = reshape(weight, (filter_in, d))
-    weight = fully_connected(weight, filter_out * width * height)
+    weight = fully_connected(X=weight, n_hidden_units=filter_out * width * height)
     weight = reshape(weight, (filter_in, filter_out, width, height))
     weight = swap_axes(weight, 0, 1)
     return weight
