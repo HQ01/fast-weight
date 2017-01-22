@@ -1,5 +1,6 @@
 import mxnet as mx
 from mx_layers import *
+from batch_convolution import batch_convolution
 from hyper_network import *
 
 def _normalized_convolution(X, kernel_shape, n_filters, stride, pad, weight=None, bias=None, name=None, constant=False):
@@ -24,6 +25,12 @@ def _normalized_convolution(X, kernel_shape, n_filters, stride, pad, weight=None
   network = ReLU(network)
   return network
 
+def _normalized_batch_convolution(X, kernel_shape, n_filters, stride, pad, data_shape, weight=None, bias=None, name=None):
+  network = batch_convolution(X, kernel_shape, n_filters, stride, pad, data_shape, weight=weight, bias=bias)
+  network = batch_normalization(network, fix_gamma=False)
+  network = ReLU(network)
+  return network
+
 _WIDTH, _HEIGHT = 3, 3
 
 def _transit(X, n_filters, index, constant=False):
@@ -35,10 +42,18 @@ def _transit(X, n_filters, index, constant=False):
   Q = pad(Q, pad_width, 'constant')
   return P + Q
 
-def _recur(X, n_filters, weight=None, bias=None):
-  residual = _normalized_convolution(X, (_WIDTH, _HEIGHT), n_filters, (1, 1), (1, 1), weight=weight, bias=bias)
-  residual = \
-    _normalized_convolution(residual, (_WIDTH, _HEIGHT), n_filters, (1, 1), (1, 1), weight=weight, bias=bias)
+def _recur(X, n_filters, weight=None, bias=None, **kwargs):
+  mode = kwargs.get('mode', 'normal')
+  if mode is 'normal':
+    residual = _normalized_convolution(X, (_WIDTH, _HEIGHT), n_filters, (1, 1), (1, 1), weight=weight, bias=bias)
+    residual = \
+      _normalized_convolution(residual, (_WIDTH, _HEIGHT), n_filters, (1, 1), (1, 1), weight=weight, bias=bias)
+  elif mode is 'batch':
+    data_shape = kwargs['data_shape']
+    residual = \
+      _normalized_batch_convolution(X, (_WIDTH, _HEIGHT), n_filters, (1, 1), (1, 1), data_shape, weight=weight, bias=bias)
+    residual = \
+      _normalized_batch_convolution(residual, (_WIDTH, _HEIGHT), n_filters, (1, 1), (1, 1), data_shape, weight=weight, bias=bias)
   return X + residual
 
 def triple_state_residual_network(n, **kwargs):
@@ -56,11 +71,11 @@ def triple_state_residual_network(n, **kwargs):
       bias = variable('shared_convolution%d_bias' % module_index)
     elif mode == 'hyper':
       if kwargs['embedding'] == 'feature_map':
-        embedding = generated_convolution_embedding(network, (_WIDTH, _HEIGHT), kwargs['batch_size'])
+        weight = convolution_weight_from_feature_maps(network, filter_in, filter_out, kwargs['data_shape'])
       if kwargs['embedding'] == 'parameter':
         embedding = N_z
-      weight = generated_convolution_weight(embedding, d, filter_in, filter_out, _WIDTH, _HEIGHT)
-      bias = variable('shared_convolution_bias%d' % module_index)
+        weight = convolution_weight_from_parameters(embedding, d, filter_in, filter_out, _WIDTH, _HEIGHT) # hyper-network paper
+      bias = variable('shared_convolution%d_bias' % module_index) # TODO
     return weight, bias
 
   network = variable('data')
@@ -69,17 +84,26 @@ def triple_state_residual_network(n, **kwargs):
   network = \
     _normalized_convolution(network, (_WIDTH, _HEIGHT), FILTER_IN, (1, 1), (1, 1), name='transition0', constant=constant)
   weight, bias = _generate_parameters(FILTER_IN, FILTER_OUT, 0)
-  for i in range(n): network = _recur(network, FILTER_OUT, weight=weight, bias=bias)
+  for i in range(n):
+    if mode is 'hyper' and kwargs['embedding'] is 'feature_map':
+      network = _recur(network, FILTER_OUT, mode='batch', weight=weight, bias=bias, data_shape=kwargs['data_shape'])
+    else: network = _recur(network, FILTER_OUT, mode='normal', weight=weight, bias=bias)
 
   FILTER_IN, FILTER_OUT = 32, 32
   network = _transit(network, FILTER_IN, 1, constant)
   weight, bias = _generate_parameters(FILTER_IN, FILTER_OUT, 1)
-  for i in range(n - 1): network = _recur(network, FILTER_OUT, weight=weight, bias=bias)
+  for i in range(n - 1):
+    if mode is 'hyper' and kwargs['embedding'] is 'feature_map':
+      network = _recur(network, FILTER_OUT, mode='batch', weight=weight, bias=bias, data_shape=kwargs['data_shape'])
+    else: network = _recur(network, FILTER_OUT, mode='normal', weight=weight, bias=bias)
 
   FILTER_IN, FILTER_OUT = 64, 64
   network = _transit(network, FILTER_IN, 2, constant)
   weight, bias = _generate_parameters(FILTER_IN, FILTER_OUT, 2)
-  for i in range(n - 1): network = _recur(network, 64, weight=weight, bias=bias)
+  for i in range(n - 1):
+    if mode is 'hyper' and kwargs['embedding'] is 'feature_map':
+      network = _recur(network, FILTER_OUT, mode='batch', weight=weight, bias=bias, data_shape=kwargs['data_shape'])
+    else: network = _recur(network, FILTER_OUT, mode='normal', weight=weight, bias=bias)
 
   network = pooling(X=network, mode='average', kernel_shape=(8, 8), stride=(1, 1), pad=(0, 0))
   network = flatten(network)
@@ -89,6 +113,7 @@ def triple_state_residual_network(n, **kwargs):
   network = softmax_loss(network, normalization='batch')
   return network
 
+# TODO cleanup
 def _normal_transition(X, n_filters, index):
   # exclude identity connection
   name = 'transition%d' % index
@@ -96,6 +121,7 @@ def _normal_transition(X, n_filters, index):
   network = _normalized_convolution(network, (_WIDTH, _HEIGHT), n_filters, (1, 1), (1, 1), name='%s_convolution1' % name)
   return network
 
+# TODO cleanup
 def transitional_network():
   network = variable('data')
   network = _normalized_convolution(network, (_WIDTH, _HEIGHT), 16, (1, 1), (1, 1), name='transition0')
