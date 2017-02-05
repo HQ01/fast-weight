@@ -1,13 +1,6 @@
 import mxnet as mx
 from mx_layers import *
 
-def generated_convolution_embedding(X, kernel, batch_size):
-  # method 0
-  X = pooling(X, 'average', kernel, (1, 1))
-  X = flatten(X)
-  X = mx.symbol.sum(X, axis=0) / float(batch_size)
-  return X
-
 def convolution_weight_from_feature_maps(X, filter_in, filter_out, data_shape):
   # dynamic filter network
   # limited purpose
