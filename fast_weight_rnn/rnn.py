@@ -91,12 +91,6 @@ class FastWeightRNN(ModelBase):
     boundary_condition = np.dot(X, WX) + np.dot(h, Wh)
     hs = h0
     for s in xrange(self._inner_length):
-      '''
-      projected_hs = self._learning_rate * sum(
-        self._decay_rate ** (len(previous_h) - t - 1) * np.dot(diagonal(np.dot(h, hs.T)), h)
-          for t, h in enumerate(previous_h)
-      )
-      '''
       projected_hs = self._learning_rate * sum(
         self._decay_rate ** (len(previous_h) - t - 1) * batch_scalar_product(h, hs) * h
           for t, h in enumerate(previous_h)
