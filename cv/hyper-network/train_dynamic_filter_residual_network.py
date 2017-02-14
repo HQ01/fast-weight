@@ -15,11 +15,12 @@ devices = (0, 1, 2, 3)
 BATCH_SIZE = 128
 DATA_SHAPE = (BATCH_SIZE / len(devices), 3, 32, 32)
 MODES = {'mode' : 'hyper', 'embedding' : 'feature_map', 'data_shape' : DATA_SHAPE}
+# MODES = {'mode' : 'hyper', 'embedding' : 'parameter'}
 N = int(sys.argv[1])
 network = triple_state_residual_network(N, **MODES)
 
 data = load_cifar10_record(BATCH_SIZE)
-lr = 0.05
+lr = 0.1
 lr_table = {32000 : lr * 0.1, 48000 : lr * 0.01}
 
 optimizer_settings = {
