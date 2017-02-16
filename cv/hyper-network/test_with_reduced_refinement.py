@@ -6,7 +6,6 @@ from mx_utilities import feed_forward, to_mx_arrays
 from residual_network import triple_state_residual_network
 
 N = 20
-i = int(sys.argv[1])
 
 def map_layers(parameters):
   p = {}
@@ -35,9 +34,9 @@ for key in map_layers(refined_parameters).keys():
 refined_parameters = to_mx_arrays(refined_parameters)
 refined_states = to_mx_arrays(refined_states)
 
-network = triple_state_residual_network(i, mode='weight-sharing')
+settings = {'mode' : 'weight-sharing', 'times' : sys.argv[1]}
+network = triple_state_residual_network(settings)
 
-'''
 model = feed_forward(
   symbol           = network,
   parameters       = refined_parameters,
@@ -48,4 +47,3 @@ model = feed_forward(
 BATCH_SIZE = 1000
 _, _, data = load_cifar10_record(BATCH_SIZE)
 accuracy = model.score(data)
-'''

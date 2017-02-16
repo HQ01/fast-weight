@@ -48,12 +48,12 @@ def _transit(X, n_filters, index):
 
 def _generate_parameters(t, settings, previous_weight, previous_bias, cache):
   mode = settings['mode']
+  prefix = cache.get('prefix', None)
   if 'normal' in mode: weight, bias = None, None
   elif 'weight-sharing' in mode:
-    prefix = cache['prefix']
-    if previous_weight is None: weight = variable('%sshared%d_weight' % (prefix, t))
+    if previous_weight is None: weight = variable('%s_shared%d_weight' % (prefix, t))
     else: weight = previous_weight
-    if previous_bias is None: bias = variable('%sshared%d_bias' % (prefix, t))
+    if previous_bias is None: bias = variable('%s_shared%d_bias' % (prefix, t))
     else: bias = previous_bias
   elif 'hyper' in mode:
     if settings['embedding'] == 'feature_map':
@@ -62,15 +62,21 @@ def _generate_parameters(t, settings, previous_weight, previous_bias, cache):
       embedding = settings['N_z']
       weight = convolution_weight_from_parameters(embedding, embedding, filter_in, filter_out, _WIDTH, _HEIGHT)
     bias = variable('%sshared%d_bias' % (prefix, t))
-  elif 'hybrid' in mode: # weight = slow_weight + fast_weight
-    if cache is None:
-      shared_weight = variable('%sshared%d_weight' % (prefix, t))
-      shared_bias = variable('%sshared%d_bias' % (prefix, t))
-      cache = {'shared_weight' : shared_weight, 'shared_bias' : shared_bias}
-      step_weight = variable('%sstep%d_weight' % (prefix, t))
-      gamma = settings['gamma']
-      weight = gamma * shared_weight + (1 - gamma) * step_weight
-      bias = gamma * shared_bias + (1 - gamma) * step_bias
+  elif 'hybrid' in mode: # weight composed of weights altering at various pace
+    intervals = settings['intervals']
+    try:
+      for index, weight in enumerate(cache['weights']):
+        interval = intervals[index]
+        if (t + 1) % interval == 0:
+          cache['weights'][index] = variable('%s_interval%d_stage%d_weight' % (prefix, interval, (t + 1) / interval))
+          cache['weights'][index] = variable('%s_interval%d_stage%d_weight' % (prefix, interval, (t + 1) / interval))
+    except:
+      cache['weights'] = [variable('%s_interval%d_stage%d_weight' % (prefix, interval, 0)) for interval in intervals]
+      cache['biases'] = [variable('%s_interval%d_stage%d_bias' % (prefix, interval, 0)) for interval in intervals]
+
+    weight = sum(coefficient * weight for coefficient, weight in zip(settings['coefficients'], cache['weights']))
+    bias = sum(coefficient * bias for coefficient, bias in zip(settings['coefficients'], cache['biases']))
+
   return weight, bias, cache
 
 _recurrent_module_count = 0
@@ -89,9 +95,11 @@ def _recur(network, times, settings):
     else: kwargs = {}
     if 'normal' in mode: function = _normalized_convolution
     elif 'weight-sharing' in mode: function = _normalized_convolution
+    elif 'hybrid' in mode: function = _normalized_convolution
     elif 'hyper' in mode and settings['embedding'] is 'feature_map':
       function = _normalized_batch_convolution
     weight, bias, cache = _generate_parameters(t, settings, weight, bias, cache)
+    # weight is shared in one residual module if weight-sharing is enabled
     kwargs.update({'weight' : weight, 'bias' : bias})
     residual = function(network, *args, **kwargs)
     residual = function(residual, *args, **kwargs)
@@ -128,3 +136,18 @@ def triple_state_residual_network(settings):
   network = fully_connected(X=network, n_hidden_units=10, name='linear_transition')
   network = softmax_loss(network, normalization='batch')
   return network
+
+if __name__ is '__main__':
+  REFINING_TIMES = 8
+  INTERVALS = (8,)
+  settings = {
+    'coefficients' : (1.0 / len(INTERVALS),) * len(INTERVALS),
+    'intervals'    : INTERVALS,
+    'mode'         : 'hybrid',
+    'times'        : REFINING_TIMES,
+  }
+  network = triple_state_residual_network(settings)
+  args = network.list_arguments()
+  _, arg_shapes, _ = network.infer_shape(data=(10000, 3, 32, 32))
+  for arg, shape in zip(args, arg_shapes):
+    print arg, shape
