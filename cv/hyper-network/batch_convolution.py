@@ -1,6 +1,5 @@
 import mxnet as mx
 from mx_layers import *
-import numpy as np0
 
 from facility import mark
 
