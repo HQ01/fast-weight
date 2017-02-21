@@ -36,7 +36,9 @@ def _transit(network, module_index):
 def _recur(network, module_index, settings):
   _, shape, _ = network.infer_shape(data=(10000, 3, 32, 32))
   n_filters = {0 : 16, 1 : 32, 2 : 64}[module_index]
-  for time in range(settings['refining_times']):
+  refining_times = settings['refining_times']
+  if module_index == 0: refining_times += 1
+  for time in range(refining_times):
     residual = _normalized_unweighted_convolution(network, (3, 3), n_filters, (1, 1), (1, 1))
     residual = _normalized_weighted_convolution(residual, (3, 3), n_filters, (1, 1), (1, 1))
     network = network + residual
