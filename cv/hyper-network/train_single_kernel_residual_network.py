@@ -8,10 +8,10 @@ from mxnet.visualization import print_summary
 from mx_initializer import PReLUInitializer
 from mx_solver import MXSolver
 
-from pooled_residual_network import pooled_residual_network
+from single_kernel_residual_network import single_kernel_residual_network
 
 refining_times = int(sys.argv[1])
-network = pooled_residual_network(refining_times)
+network = single_kernel_residual_network(refining_times)
 
 BATCH_SIZE = 128
 lr = 0.1
