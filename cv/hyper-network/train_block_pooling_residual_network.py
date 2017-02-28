@@ -42,7 +42,8 @@ solver = MXSolver(
 data = load_cifar10_record(BATCH_SIZE)
 info = solver.train(data)
 
-identifier = 'block-pooling-residual-network-refinement-%d-pooling-%d' % (refining_times, pooling_times)
+identifier = 'block-pooling-residual-network-refinement-%s-pooling-%s' % \
+  ('-'.join(map(str, refining_times)), '-'.join(map(str, pooling_times)))
 pickle.dump(info, open('info/%s' % identifier, 'wb'))
 parameters = solver.export_parameters()
 pickle.dump(parameters, open('parameters/%s' % identifier, 'wb'))
