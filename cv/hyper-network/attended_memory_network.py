@@ -31,16 +31,16 @@ def _read(memory, settings):
 
 _n_attended_memory_module = 0
 def _attended_memory_module(network, settings):
-  args = {key : value for key, value in settings['convolution_settings'].items()}
+  kwargs = {key : value for key, value in settings['convolution_settings'].items()}
   global _n_attended_memory_module
   prefix = 'attended_memory_module%d' % _n_attended_memory_module
   if settings['weight_sharing']:
-    args['weight'] = layers.variable('%s_weight' % prefix)
-    args['bias'] = layers.variable('%s_bias' % prefix)
+    kwargs['weight'] = layers.variable('%s_weight' % prefix)
+    kwargs['bias'] = layers.variable('%s_bias' % prefix)
   memory = [network]
   for index in range(settings['n_layers']):
-    args['X'] = _read(memory, settings)
-    network = _normalized_convolution(**args)
+    kwargs['X'] = _read(memory, settings)
+    network = _normalized_convolution(**kwargs)
     memory.append(network)
   _n_attended_memory_module += 1
   return network
@@ -59,6 +59,7 @@ def attended_memory_network(settings):
   network = layers.pooling(X=network, mode='average', global_pool=True, kernel_shape=(1, 1), stride=(1, 1), pad=(1, 1))
   network = layers.flatten(network)
   network = layers.fully_connected(X=network, n_hidden_units=10, name='linear_transition')
+  network = layers.softmax_loss(prediction=network, normalization='batch', id='softmax')
   return network
 
 if __name__ is '__main__':
