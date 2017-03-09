@@ -32,7 +32,6 @@ def _recur(network, module_index, settings):
     residual = _normalized_convolution(network, (3, 3), n_filters, (1, 1), (1, 1))
     residual = _normalized_convolution(residual, (3, 3), n_filters, (1, 1), (1, 1))
     identity = _normalized_pooling(network, (3, 3), (1, 1), (1, 1))
-#   identity = _normalized_pooling(identity, (3, 3), (1, 1), (1, 1))
     network = identity + residual
   return network
 

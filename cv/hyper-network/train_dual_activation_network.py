@@ -1,21 +1,19 @@
 import cPickle as pickle
 import sys
 
-from lr_scheduler import AtEpochScheduler, AtIterationScheduler
+from lr_scheduler import AtIterationScheduler
 from data_utilities import load_cifar10_record
-from mxnet.initializer import Xavier, MSRAPrelu
-from mxnet.visualization import print_summary
 from mx_initializer import PReLUInitializer
 from mx_solver import MXSolver
 
-from pooling_identity_residual_network import pooling_identity_residual_network
-
+from dual_activation_network import dual_activation_network
 N = int(sys.argv[1])
-network = pooling_identity_residual_network(N)
+network = dual_activation_network(N)
 
 BATCH_SIZE = 128
 lr = 0.1
-lr_table = {27000 : lr * 0.1, 48000 : lr * 0.01}
+# lr_table = {}
+lr_table = {32000 : lr * 0.1, 48000 : lr * 0.01}
 lr_scheduler = AtIterationScheduler(lr, lr_table)
 
 optimizer_settings = {
@@ -39,7 +37,7 @@ solver = MXSolver(
 data = load_cifar10_record(BATCH_SIZE)
 info = solver.train(data)
 
-identifier = 'pooling-identity-residual-network-N-%d' % N
+identifier = 'dual-activation-network-%d' % N
 pickle.dump(info, open('info/%s' % identifier, 'wb'))
 parameters = solver.export_parameters()
 pickle.dump(parameters, open('parameters/%s' % identifier, 'wb'))
