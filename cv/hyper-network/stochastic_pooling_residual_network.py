@@ -1,3 +1,4 @@
+from random import random
 import mx_layers as layers
 from residual_network_frame import residual_network
 
@@ -7,10 +8,13 @@ def _normalized_convolution(network, kernel_shape, n_filters, stride, pad):
   network = layers.ReLU(network)
   return network
 
-def _normalized_pooling(network, kernel_shape, stride, pad):
-  network = layers.pooling(X=network, mode='maximum', kernel_shape=kernel_shape, stride=stride, pad=pad)
+def _normalized_pooling(network, mode, kernel_shape, stride, pad):
+  network = layers.pooling(X=network, mode=mode, kernel_shape=kernel_shape, stride=stride, pad=pad)
   network = layers.batch_normalization(network)
   return network
+
+def _random_gate(p, shape):
+  return layers.maximum(0, layers.sign(p - layers.uniform(shape=shape)))
 
 def _transit(network, module_index):
   n_filters = {0 : 16, 1 : 32, 2 : 64}[module_index]
@@ -25,18 +29,26 @@ def _transit(network, module_index):
     return P + Q
 
 def _recur(network, module_index, settings):
+  _, shape, _ = network.infer_shape(data=(1, 3, 32, 32))
   n_filters = {0 : 16, 1 : 32, 2 : 64}[module_index]
-  N = settings['N']
-  if module_index == 0: N += 1
-  for time in range(N):
-    residual = _normalized_convolution(network, (3, 3), n_filters, (1, 1), (1, 1))
-    residual = _normalized_convolution(residual, (3, 3), n_filters, (1, 1), (1, 1))
-    identity = _normalized_pooling(network, (3, 3), (1, 1), (1, 1))
+  n_layers = settings['n_layers']
+  stochastic = settings.get('stochastic', False)
+  if module_index == 0: n_layers += 1
+  for time in range(n_layers):
+    identity = network
+    if stochastic > 0:
+      long_path = _normalized_convolution(network, (3, 3), n_filters, (1, 1), (1, 1))
+      long_path = _normalized_convolution(long_path, (3, 3), n_filters, (1, 1), (1, 1))
+      short_path = _normalized_pooling(network, settings['mode'], (3, 3), (1, 1), (1, 1))
+      gate = _random_gate(stochastic, (1, 1, 1, 1))
+      residual = gate * long_path + (1 - gate) * short_path
+    else:
+      residual = _normalized_convolution(network, (3, 3), n_filters, (1, 1), (1, 1))
+      residual = _normalized_convolution(residual, (3, 3), n_filters, (1, 1), (1, 1))
     network = identity + residual
   return network
 
-def pooling_identity_residual_network(N):
-  settings = {'N' : N}
+def stochastic_pooling_residual_network(settings):
   recur = lambda network, module_index : _recur(network, module_index, settings)
   procedures = ((_transit, recur),) * 3
   network = residual_network(procedures)

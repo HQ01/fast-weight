@@ -39,8 +39,8 @@ def _recur(network, module_index, settings):
   refining_times = settings['refining_times']
   if module_index == 0: refining_times += 1
   for time in range(refining_times):
-    residual = _normalized_unweighted_convolution(network, (3, 3), n_filters, (1, 1), (1, 1))
     residual = _normalized_weighted_convolution(residual, (3, 3), n_filters, (1, 1), (1, 1))
+    residual = _normalized_unweighted_convolution(network, (3, 3), n_filters, (1, 1), (1, 1))
     network = network + residual
   return network
 

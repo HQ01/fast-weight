@@ -8,10 +8,10 @@ def _normalized_convolution(**args):
   return network
 
 def _attention_network(network):
-  network = _normalized_convolution(X=network, n_filters=16, kernel_shape=(3, 3), stride=(1, 1), pad=(1, 1))
+  network = _normalized_convolution(X=network, n_filters=8, kernel_shape=(3, 3), stride=(1, 1), pad=(1, 1))
   network = layers.pooling(X=network, mode='average', global_pool=True, kernel_shape=(1, 1), stride=(1, 1), pad=(1, 1))
   network = layers.flatten(network)
-  network = layers.fully_connected(X=network, n_hidden_units=1, name='linear_transition')
+  network = layers.fully_connected(X=network, n_hidden_units=1)
   return network
 
 def _softmax(scores):
@@ -58,7 +58,7 @@ def attended_memory_network(settings):
       network = getattr(layers, module_settings['operator'])(*args, **kwargs)
   network = layers.pooling(X=network, mode='average', global_pool=True, kernel_shape=(1, 1), stride=(1, 1), pad=(1, 1))
   network = layers.flatten(network)
-  network = layers.fully_connected(X=network, n_hidden_units=10, name='linear_transition')
+  network = layers.fully_connected(X=network, n_hidden_units=10)
   network = layers.softmax_loss(prediction=network, normalization='batch', id='softmax')
   return network
 
