@@ -13,7 +13,7 @@ from stochastic_pooling_residual_network import stochastic_pooling_residual_netw
 settings = {
   'n_layers'     : int(sys.argv[1]),
   'pooling_mode' : sys.argv[2],
-  'p'   : float(sys.argv[3]),
+  'p'            : float(sys.argv[3]),
 }
 network = stochastic_pooling_residual_network(settings)
 
