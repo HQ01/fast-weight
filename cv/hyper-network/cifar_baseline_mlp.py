@@ -1,8 +1,7 @@
 import cPickle as pickle
 
-from data_utilities import load_cifar10
+from data_utilities import load_cifar10, load_cifar10_record
 from lr_scheduler import AtEpochScheduler, AtIterationScheduler
-from mxnet.visualization import print_summary
 from mx_initializer import PReLUInitializer
 from mx_solver import MXSolver
 from GPU_utility import GPU_availability
@@ -42,7 +41,8 @@ solver = MXSolver(
   verbose = True,
 )
 
-data = load_cifar10(center=True, rescale=True)
+# data = load_cifar10(center=True, rescale=True)
+data = load_cifar10_record(BATCH_SIZE)
 info = solver.train(data)
 
 identifier = 'cifar-baseline-mlp-%d-%d' % (N_LAYERS, N_HIDDEN_UNITS)

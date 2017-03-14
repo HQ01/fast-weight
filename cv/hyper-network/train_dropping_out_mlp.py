@@ -2,7 +2,7 @@ import cPickle as pickle
 import sys
 
 from lr_scheduler import AtEpochScheduler, AtIterationScheduler
-from data_utilities import load_cifar10
+from data_utilities import load_cifar10, load_cifar10_record
 from mxnet.initializer import Xavier, MSRAPrelu
 from mxnet.visualization import print_summary
 from mx_initializer import PReLUInitializer
@@ -45,7 +45,8 @@ solver = MXSolver(
   verbose = True,
 )
 
-data = load_cifar10(center=True, rescale=True)
+# data = load_cifar10(center=True, rescale=True)
+data = load_cifar10_record(BATCH_SIZE)
 info = solver.train(data)
 
 identifier = 'dropping-out-mlp-%d-%d' % (N_LAYERS, N_HIDDEN_UNITS)
