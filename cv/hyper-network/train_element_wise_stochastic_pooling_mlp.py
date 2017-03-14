@@ -2,7 +2,7 @@ import cPickle as pickle
 import sys
 
 from lr_scheduler import AtEpochScheduler, AtIterationScheduler
-from data_utilities import load_cifar10_record
+from data_utilities import load_cifar10
 from mxnet.initializer import Xavier, MSRAPrelu
 from mxnet.visualization import print_summary
 from mx_initializer import PReLUInitializer
@@ -11,10 +11,12 @@ from GPU_utility import GPU_availability
 
 from element_wise_stochastic_pooling_mlp import element_wise_stochastic_pooling_mlp
 
+N_HIDDEN_UNITS = 3072
+N_LAYERS = 3
 settings = {
   'layer_settings' : (
-    {'n_hidden_units' : 1024, 'pooling_mode' : 'average', 'p' : 0.5},
-  ) * 3,
+    {'n_hidden_units' : N_HIDDEN_UNITS, 'pooling_mode' : 'average', 'p' : 0.8},
+  ) * N_LAYERS,
   'n_classes' : 10,
 }
 network = element_wise_stochastic_pooling_mlp(settings)
@@ -27,19 +29,11 @@ lr_table = {}
 lr_scheduler = AtIterationScheduler(lr, lr_table)
 
 optimizer_settings = {
-  'args'         : {'momentum' : 0.9},
+  'args'         : {'momentum' : 0.95},
   'initial_lr'   : lr,
   'lr_scheduler' : lr_scheduler,
   'optimizer'    : 'SGD',
 }
-
-'''
-optimizer_settings = {
-  'initial_lr'   : 0.001,
-  'lr_scheduler' : lr_scheduler,
-  'optimizer'    : 'Adam',
-}
-'''
 
 solver = MXSolver(
   batch_size = BATCH_SIZE,
@@ -51,10 +45,10 @@ solver = MXSolver(
   verbose = True,
 )
 
-data = load_cifar10_record(BATCH_SIZE)
+data = load_cifar10(center=True, rescale=True)
 info = solver.train(data)
 
-identifier = 'element-wise-stochastic-pooling-mlp-%d' % (len(settings['layer_settings']))
+identifier = 'element-wise-stochastic-pooling-mlp-%d-%d' % (N_LAYERS, N_HIDDEN_UNITS)
 pickle.dump(info, open('info/%s' % identifier, 'wb'))
 parameters = solver.export_parameters()
 pickle.dump(parameters, open('parameters/%s' % identifier, 'wb'))

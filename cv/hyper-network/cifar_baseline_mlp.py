@@ -1,25 +1,22 @@
 import cPickle as pickle
-import sys
 
-from lr_scheduler import AtEpochScheduler, AtIterationScheduler
 from data_utilities import load_cifar10
-from mxnet.initializer import Xavier, MSRAPrelu
+from lr_scheduler import AtEpochScheduler, AtIterationScheduler
 from mxnet.visualization import print_summary
 from mx_initializer import PReLUInitializer
 from mx_solver import MXSolver
 from GPU_utility import GPU_availability
 
-from dropping_out_mlp import dropping_out_mlp
+import mx_layers as layers
 
-N_HIDDEN_UNITS = 3072
+N_HIDDEN_UNITS = 1536
 N_LAYERS = 3
-settings = {
-  'layer_settings' : (
-    {'n_hidden_units' : N_HIDDEN_UNITS, 'p' : 0.5},
-  ) * N_LAYERS,
-  'n_classes' : 10,
-}
-network = dropping_out_mlp(settings)
+network = layers.variable('data')
+for index in range(N_LAYERS):
+  network = layers.fully_connected(X=network, n_hidden_units=N_HIDDEN_UNITS)
+  network = layers.ReLU(network)
+network = layers.fully_connected(X=network, n_hidden_units=10)
+network = layers.softmax_loss(prediction=network, normalization='batch', id='softmax')
 
 BATCH_SIZE = 64
 
@@ -48,7 +45,7 @@ solver = MXSolver(
 data = load_cifar10(center=True, rescale=True)
 info = solver.train(data)
 
-identifier = 'dropping-out-mlp-%d-%d' % (N_LAYERS, N_HIDDEN_UNITS)
+identifier = 'cifar-baseline-mlp-%d-%d' % (N_LAYERS, N_HIDDEN_UNITS)
 pickle.dump(info, open('info/%s' % identifier, 'wb'))
 parameters = solver.export_parameters()
 pickle.dump(parameters, open('parameters/%s' % identifier, 'wb'))
