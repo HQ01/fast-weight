@@ -36,11 +36,11 @@ def _recur(network, module_index, settings):
   if module_index == 0: n_layers += 1
   for time in range(n_layers):
     identity = network
-    if p > 0:
+    if p < 1:
       long_path = _normalized_convolution(network, (3, 3), n_filters, (1, 1), (1, 1))
       long_path = _normalized_convolution(long_path, (3, 3), n_filters, (1, 1), (1, 1))
-      short_path = _normalized_pooling(network, settings['mode'], (3, 3), (1, 1), (1, 1))
-      gate = _random_gate(p, (1, 1, 1, 1))
+      short_path = _normalized_pooling(network, settings['pooling_mode'], (3, 3), (1, 1), (1, 1))
+      gate = _random_gate(p, (1, 1, 1, 1)) # probability of using long path
       residual = gate * long_path + (1 - gate) * short_path
     else:
       residual = _normalized_convolution(network, (3, 3), n_filters, (1, 1), (1, 1))

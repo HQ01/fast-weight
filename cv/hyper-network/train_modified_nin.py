@@ -1,26 +1,22 @@
 import cPickle as pickle
-import sys
 
 from lr_scheduler import AtEpochScheduler, AtIterationScheduler
 from data_utilities import load_cifar10_record
-from mxnet.initializer import Xavier, MSRAPrelu
-from mxnet.visualization import print_summary
 from mx_initializer import PReLUInitializer
 from mx_solver import MXSolver
 
-from stochastic_pooling_residual_network import stochastic_pooling_residual_network
+from modified_nin import nin
 
-settings = {
-  'n_layers'     : int(sys.argv[1]),
-  'pooling_mode' : sys.argv[2],
-  'p'            : float(sys.argv[3]),
-}
-network = stochastic_pooling_residual_network(settings)
+settings = {}
+settings['transition_mode'] = 'convolution + pooling'
+# settings['transition_mode'] = 'pooling + pooling'
+# settings['transition_mode'] = 'stochastic_pooling'
+network = nin(settings)
 
 BATCH_SIZE = 128
 
-lr = 0.1
-lr_table = {27000 : lr * 0.1, 48000 : lr * 0.01}
+lr = 0.05
+lr_table = {24000 : lr * 0.1, 48000 : lr * 0.01}
 
 lr_scheduler = AtIterationScheduler(lr, lr_table)
 
@@ -45,7 +41,7 @@ solver = MXSolver(
 data = load_cifar10_record(BATCH_SIZE)
 info = solver.train(data)
 
-identifier = 'stochastic-%s-pooling-residual-network-%d-p-%f' % (settings['pooling_mode'], settings['n_layers'], settings['p'])
+identifier = 'modified-nin-%s' % (settings['transition_mode'])
 pickle.dump(info, open('info/%s' % identifier, 'wb'))
 parameters = solver.export_parameters()
 pickle.dump(parameters, open('parameters/%s' % identifier, 'wb'))
