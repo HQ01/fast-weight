@@ -13,15 +13,15 @@ from element_wise_stochastic_pooling_mlp import element_wise_stochastic_pooling_
 
 N_HIDDEN_UNITS = 3072
 N_LAYERS = 3
+BATCH_SIZE = 64
 settings = {
+  'batch_size' : BATCH_SIZE,
   'layer_settings' : (
     {'n_hidden_units' : N_HIDDEN_UNITS, 'pooling_mode' : 'average', 'p' : 0.5},
   ) * N_LAYERS,
   'n_classes' : 10,
 }
 network = element_wise_stochastic_pooling_mlp(settings)
-
-BATCH_SIZE = 64
 
 lr = 0.1
 lr_table = {}
@@ -45,8 +45,8 @@ solver = MXSolver(
   verbose = True,
 )
 
-# data = load_cifar10(center=True, rescale=True)
-data = load_cifar10_record(BATCH_SIZE)
+data = load_cifar10(center=True, rescale=True)
+# data = load_cifar10_record(BATCH_SIZE)
 info = solver.train(data)
 
 identifier = 'element-wise-stochastic-pooling-mlp-%d-%d' % (N_LAYERS, N_HIDDEN_UNITS)

@@ -41,8 +41,8 @@ solver = MXSolver(
   verbose = True,
 )
 
-# data = load_cifar10(center=True, rescale=True)
-data = load_cifar10_record(BATCH_SIZE)
+data = load_cifar10(center=True, rescale=True)
+# data = load_cifar10_record(BATCH_SIZE)
 info = solver.train(data)
 
 identifier = 'cifar-baseline-mlp-%d-%d' % (N_LAYERS, N_HIDDEN_UNITS)
