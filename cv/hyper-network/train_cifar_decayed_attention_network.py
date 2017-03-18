@@ -55,7 +55,7 @@ network = decayed_attention_network(settings)
 
 BATCH_SIZE = 128
 lr = 0.1
-lr_table = {24000 : lr * 0.1, 48000 : lr * 0.01}
+lr_table = {32000 : lr * 0.1, 48000 : lr * 0.01}
 lr_scheduler = AtIterationScheduler(lr, lr_table)
 
 optimizer_settings = {

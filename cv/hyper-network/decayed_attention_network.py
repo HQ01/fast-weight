@@ -14,7 +14,6 @@ def _write(X, memory, settings):
   decaying_rate = settings['decaying_rate']
   learning_rate = settings['learning_rate']
   memory = decaying_rate * memory + learning_rate * X
-  memory = layers.batch_normalization(memory)
   return memory
 
 _n_decayed_attention_module = 0
@@ -30,7 +29,7 @@ def _decayed_attention_module(network, settings):
     kwargs['weight'] = layers.variable('%s_weight' % prefix)
     kwargs['bias'] = layers.variable('%s_bias' % prefix)
   for index in range(settings['n_layers']):
-    memory = _write(network, memory, memory_settings) # dynamic period of memory writing
+    memory = _write(network, memory, memory_settings)
     network = _read(memory, memory_settings)
     network = _normalized_convolution(X=network, **kwargs)
     network = _normalized_convolution(X=network, **kwargs)
