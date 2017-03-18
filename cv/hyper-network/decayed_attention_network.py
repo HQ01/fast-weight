@@ -38,8 +38,8 @@ def _decayed_attention_module(network, settings):
   return network
 
 def _transit(network, n_filters):
-  left = _normalized_convolution(X=network, n_filters=n_filters, kernel_shape=(3, 3), stride=(2, 2), pad=(1, 1))
-  left = _normalized_convolution(X=left, n_filters=n_filters, kernel_shape=(3, 3), stride=(2, 2), pad=(1, 1))
+  left = _normalized_convolution(X=network, n_filters=n_filters / 2, kernel_shape=(3, 3), stride=(2, 2), pad=(1, 1))
+  left = _normalized_convolution(X=left, n_filters=n_filters, kernel_shape=(1, 1), stride=(1, 1), pad=(0, 0))
   right = layers.pooling(X=network, mode='average', kernel_shape=(2, 2), stride=(2, 2), pad=(0, 0))
   pad_width = (0, 0, 0, n_filters / 2, 0, 0, 0, 0)
   right = layers.pad(right, pad_width, 'constant')
