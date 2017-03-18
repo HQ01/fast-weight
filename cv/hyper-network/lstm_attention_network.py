@@ -8,13 +8,13 @@ def _normalized_convolution(**args):
   return network
 
 def _lstm_convolution(X, n_filters, weight):
-  return layers.convolution(X=X, n_filters=n_filters, kernel_shape=(3, 3), stride=(1, 1), pad=(1, 1), weight=weight, no_bias=True)
+  return \
+    _normalized_convolution(X=X, n_filters=n_filters, kernel_shape=(3, 3), stride=(1, 1), pad=(1, 1), weight=weight, no_bias=True)
 
 def _lstm(X, settings, parameters, memory):
   n_filters = settings['n_filters'] * 4
   X_weight, h_weight, bias = parameters
   previous_h, previous_c = memory
-  # TODO normalization
   if previous_h is 0:
     array = _lstm_convolution(X, n_filters, X_weight)
     array = layers.broadcast_plus(array, bias)
@@ -36,9 +36,7 @@ def _lstm(X, settings, parameters, memory):
 def _read(settings, memory):
   n_filters = settings['n_filters']
   h, c = memory
-  # TODO kernel shape?
-  return _normalized_convolution(X=h, n_filters=n_filters, kernel_shape=(3, 3), stride=(1, 1), pad=(1, 1))
-# return _normalized_convolution(X=h, n_filters=n_filters, kernel_shape=(1, 1), stride=(1, 1), pad=(0, 0))
+  return h
 
 def _write(X, settings, parameters, memory):
   memory = _lstm(X, settings, parameters, memory)
@@ -63,9 +61,11 @@ def _lstm_attention_module(network, settings):
     kwargs['bias'] = layers.variable('%s_bias' % prefix)
   network = layers.batch_normalization(network)
   for index in range(settings['n_layers']):
-    memory = _write(network, memory_settings, lstm_parameters, memory) # dynamic period of memory writing
+    memory = _write(network, memory_settings, lstm_parameters, memory)
     network = _read(memory_settings, memory)
     network = _normalized_convolution(X=network, **kwargs)
+    memory = _write(network, memory_settings, lstm_parameters, memory)
+    network = _read(memory_settings, memory)
     network = _normalized_convolution(X=network, **kwargs)
 
   _n_lstm_attention_module += 1
@@ -84,6 +84,7 @@ def _transit(network, n_filters):
 
 def _transit(network, n_filters):
   network = layers.pooling(X=network, mode='average', kernel_shape=(2, 2), stride=(2, 2), pad=(0, 0))
+  network = layers.batch_normalization(network)
   pad_width = (0, 0, 0, n_filters / 2, 0, 0, 0, 0)
   network = layers.pad(network, pad_width, 'constant')
   return network
