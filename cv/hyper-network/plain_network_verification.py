@@ -1,4 +1,5 @@
 import sys
+import cPickle as pickle
 
 from data_utilities import load_cifar10_record
 from lr_scheduler import AtIterationScheduler
@@ -65,5 +66,5 @@ solver = MXSolver(
 
 data = load_cifar10_record(BATCH_SIZE)
 info = solver.train(data)
-identifier = 'cifar-plain-network-%d-convolution-transition' % N
+identifier = 'cifar-plain-network-%d-pooling-transition' % N
 pickle.dump(info, open('info/%s' % identifier, 'wb'))
