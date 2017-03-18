@@ -44,7 +44,7 @@ def _transit(network, n_filters):
   right = layers.pooling(X=network, mode='average', kernel_shape=(2, 2), stride=(2, 2), pad=(0, 0))
   pad_width = (0, 0, 0, n_filters / 2, 0, 0, 0, 0)
   right = layers.pad(right, pad_width, 'constant')
-  return right + right
+  return left + right
 
 def decayed_attention_network(settings):
   network = layers.variable('data')
