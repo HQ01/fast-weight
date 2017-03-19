@@ -19,9 +19,9 @@ def _transit(network, n_filters, mode):
   right = layers.pooling(X=network, mode='average', kernel_shape=(2, 2), stride=(2, 2), pad=(0, 0))
   pad_width = (0, 0, 0, n_filters / 2, 0, 0, 0, 0)
   right = layers.pad(right, pad_width, 'constant')
-  if mode is 'left': return left
-  elif mode is 'right' : return right
-  else: return left + right
+  if mode == 'left': return left
+  elif mode == 'right': return right
+  elif mode == 'left-right': return left + right
 
 N = int(sys.argv[1])
 mode = sys.argv[2]
