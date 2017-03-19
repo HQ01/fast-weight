@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+import cPickle as pickle
 
 import mx_layers as layers
 from mx_utility import output_shape
@@ -32,7 +33,6 @@ def _previous_n_moment_module(network, settings):
     network = _normalized_convolution(X=network, **convolution_args)
     network = _normalized_convolution(X=network, **convolution_args)
     memory.append(network)
-    print len(memory[max(0, index - n_moments + 2):])
     network = sum(memory[max(0, index - n_moments + 2):])
   return network
 
@@ -61,8 +61,6 @@ network = layers.flatten(network)
 network = layers.fully_connected(X=network, n_hidden_units=10)
 network = layers.softmax_loss(prediction=network, normalization='batch', id='softmax')
 
-print output_shape(network, data=(1000, 3, 32, 32))
-
 BATCH_SIZE = 128
 lr = 0.1
 lr_table = {32000 : lr * 0.1, 48000 : lr * 0.01}
@@ -87,12 +85,10 @@ solver = MXSolver(
   verbose = True,
 )
 
-'''
 data = load_cifar10_record(BATCH_SIZE)
 info = solver.train(data)
 
-identifier = 'cifar-previous-n-moment-network-%d-decaying-rate-%f' % (configs.n_layers, configs.n_moments)
+identifier = 'cifar-previous-%d-moment-network-%d' % (configs.n_moments, configs.n_layers)
 pickle.dump(info, open('info/%s' % identifier, 'wb'))
 parameters = solver.export_parameters()
 pickle.dump(parameters, open('parameters/%s' % identifier, 'wb'))
-'''
