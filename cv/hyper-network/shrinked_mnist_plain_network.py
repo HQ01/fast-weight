@@ -20,19 +20,15 @@ def _normalized_convolution(**args):
 
 # TODO calculate receptive field
 network = layers.variable('data')
-network = _normalized_convolution(X=network, n_filters=16, kernel_shape=(5, 5), stride=(1, 1), pad=(2, 2))
-network = layers.pooling(X=network, mode='maximum', kernel_shape=(2, 2), stride=(2, 2), pad=(0, 0))
-network = _normalized_convolution(X=network, n_filters=16, kernel_shape=(5, 5), stride=(1, 1), pad=(2, 2))
-network = layers.pooling(X=network, mode='maximum', kernel_shape=(2, 2), stride=(2, 2), pad=(0, 0))
-network = _normalized_convolution(X=network, n_filters=16, kernel_shape=(5, 5), stride=(1, 1), pad=(2, 2))
-network = layers.pooling(X=network, mode='maximum', kernel_shape=(2, 2), stride=(2, 2), pad=(0, 0))
-network = _normalized_convolution(X=network, n_filters=16, kernel_shape=(5, 5), stride=(1, 1), pad=(2, 2))
+for index in range(3):
+  network = _normalized_convolution(X=network, n_filters=16, kernel_shape=(5, 5), stride=(1, 1), pad=(2, 2))
+  network = layers.pooling(X=network, mode='maximum', kernel_shape=(2, 2), stride=(2, 2), pad=(0, 0))
 
 shared_weight = layers.variable('shared_convolution_weight')
 shared_bias = layers.variable('shared_convolution_bias')
 kwargs = {'n_filters' : 16, 'kernel_shape' : (3, 3), 'stride' : (1, 1), 'pad' : (1, 1)}
 for index in range(configs.n_plain_layers):
-  network = network +  _normalized_convolution(X=network, weight=shared_weight, bias=shared_bias, **kwargs)
+  network = _normalized_convolution(X=network, weight=shared_weight, bias=shared_bias, **kwargs)
 
 network = layers.pooling(X=network, mode='average', global_pool=True, kernel_shape=(1, 1), stride=(1, 1), pad=(0, 0))
 network = layers.flatten(network)

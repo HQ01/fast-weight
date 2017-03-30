@@ -24,12 +24,10 @@ for index in range(3):
   network = _normalized_convolution(X=network, n_filters=16, kernel_shape=(5, 5), stride=(1, 1), pad=(2, 2))
   network = layers.pooling(X=network, mode='maximum', kernel_shape=(2, 2), stride=(2, 2), pad=(0, 0))
 
-shared_weight = layers.variable('shared_convolution_weight')
-shared_bias = layers.variable('shared_convolution_bias')
 kwargs = {'n_filters' : 16, 'kernel_shape' : (3, 3), 'stride' : (1, 1), 'pad' : (1, 1)}
 for index in range(configs.n_residual_layers):
   identity = network
-  residual = _normalized_convolution(X=network, weight=shared_weight, bias=shared_bias, **kwargs)
+  residual = _normalized_convolution(X=network, **kwargs)
   network = identity + residual
 
 network = layers.pooling(X=network, mode='average', global_pool=True, kernel_shape=(1, 1), stride=(1, 1), pad=(0, 0))
@@ -52,14 +50,10 @@ solver = MXSolver(
 data = []
 data.extend(load_mnist(path='stretched_mnist', scale=1, shape=(1, 56, 56))[:2])
 data.extend(load_mnist(path='stretched_canvas_mnist', scale=1, shape=(1, 56, 56))[2:])
-'''
-data.extend(load_mnist(path='stretched_canvas_mnist', scale=1, shape=(1, 56, 56))[:2])
-data.extend(load_mnist(path='stretched_mnist', scale=1, shape=(1, 56, 56))[2:])
-'''
 
 info = solver.train(data)
 
-identifier = 'shrinked-mnist-residual-network-%d-%s' % (configs.n_residual_layers, configs.postfix)
+identifier = 'shrinked-mnist-private-weight-residual-network-%d-%s' % (configs.n_residual_layers, configs.postfix)
 pickle.dump(info, open('info/%s' % identifier, 'wb'))
 parameters = solver.export_parameters()
 pickle.dump(parameters, open('parameters/%s' % identifier, 'wb'))
