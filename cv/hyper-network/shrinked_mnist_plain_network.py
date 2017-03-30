@@ -1,5 +1,5 @@
-import cPickle as pickle
 from argparse import ArgumentParser
+import cPickle as pickle
 
 import mx_layers as layers
 from mx_initializer import PReLUInitializer
@@ -7,9 +7,9 @@ from mx_solver import MXSolver
 from data_utilities import load_mnist
 
 parser = ArgumentParser()
-parser.add_argument('--gpu_index', type=int)
-parser.add_argument('--n_plain_layers', type=int)
-parser.add_argument('--postfix', type=str)
+parser.add_argument('--gpu_index', type=int, required=True)
+parser.add_argument('--n_plain_layers', type=int, required=True)
+parser.add_argument('--postfix', type=str, required=True)
 configs = parser.parse_args()
 
 def _normalized_convolution(**args):
@@ -18,14 +18,23 @@ def _normalized_convolution(**args):
   network = layers.ReLU(network)
   return network
 
+# TODO calculate receptive field
 network = layers.variable('data')
 network = _normalized_convolution(X=network, n_filters=16, kernel_shape=(5, 5), stride=(1, 1), pad=(2, 2))
 network = layers.pooling(X=network, mode='maximum', kernel_shape=(2, 2), stride=(2, 2), pad=(0, 0))
+network = _normalized_convolution(X=network, n_filters=16, kernel_shape=(5, 5), stride=(1, 1), pad=(2, 2))
+network = layers.pooling(X=network, mode='maximum', kernel_shape=(2, 2), stride=(2, 2), pad=(0, 0))
+network = _normalized_convolution(X=network, n_filters=16, kernel_shape=(5, 5), stride=(1, 1), pad=(2, 2))
+network = layers.pooling(X=network, mode='maximum', kernel_shape=(2, 2), stride=(2, 2), pad=(0, 0))
+network = _normalized_convolution(X=network, n_filters=16, kernel_shape=(5, 5), stride=(1, 1), pad=(2, 2))
 
+shared_weight = layers.variable('shared_convolution_weight')
+shared_bias = layers.variable('shared_convolution_bias')
+kwargs = {'n_filters' : 16, 'kernel_shape' : (3, 3), 'stride' : (1, 1), 'pad' : (1, 1)}
 for index in range(configs.n_plain_layers):
-  network = _normalized_convolution(X=network, n_filters=16, kernel_shape=(3, 3), stride=(1, 1), pad=(1, 1))
+  network = network +  _normalized_convolution(X=network, weight=shared_weight, bias=shared_bias, **kwargs)
 
-network = layers.pooling(X=network, mode='average', global_pool=True, kernel_shape=(28, 28), stride=(1, 1), pad=(0, 0))
+network = layers.pooling(X=network, mode='average', global_pool=True, kernel_shape=(1, 1), stride=(1, 1), pad=(0, 0))
 network = layers.flatten(network)
 network = layers.fully_connected(X=network, n_hidden_units=10)
 network = layers.softmax_loss(prediction=network, normalization='batch', id='softmax')
@@ -35,16 +44,16 @@ optimizer_settings = {'args' : {'momentum' : 0.9}, 'initial_lr' : 0.1, 'optimize
 solver = MXSolver(
   batch_size         = 64,
   devices            = (configs.gpu_index,),
-  epochs             = 50,
+  epochs             = 30,
   initializer        = PReLUInitializer(),
   optimizer_settings = optimizer_settings,
   symbol             = network,
   verbose            = True,
 )
 
-training_data, training_labels, _, _, _, _ = load_mnist(shape=(1, 28, 28))
-_, _, validation_data, validation_labels, test_data, test_labels = load_mnist(path='shrinked_mnist', shape=(1, 28, 28))
-data = training_data, training_labels, validation_data, validation_labels, test_data, test_labels
+data = []
+data.extend(load_mnist(path='stretched_mnist', scale=1, shape=(1, 56, 56))[:2])
+data.extend(load_mnist(path='stretched_canvas_mnist', scale=1, shape=(1, 56, 56))[2:])
 
 info = solver.train(data)
 
