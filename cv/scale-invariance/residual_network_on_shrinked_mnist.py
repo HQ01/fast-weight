@@ -9,7 +9,7 @@ parser = ArgumentParser()
 parser.add_argument('--gpu_index', type=int, required=True)
 parser.add_argument('--n_residual_layers', type=int, required=True)
 parser.add_argument('--postfix', type=str, required=True)
-configs = parser.parse_args()
+args = parser.parse_args()
 
 def _normalized_convolution(**args):
   network = layers.convolution(no_bias=True, **args)
@@ -27,9 +27,16 @@ shared_weight = layers.variable('shared_weight')
 shared_gamma = layers.variable('shared_gamma')
 shared_beta = layers.variable('shared_beta')
 kwargs = {'n_filters' : 16, 'kernel_shape' : (3, 3), 'stride' : (1, 1), 'pad' : (1, 1)}
-for index in range(configs.n_residual_layers):
-  network = ReLU(network)
+
+'''
+identity = network
+residual = layers.convolution(X=network, weight=shared_weight, no_bias=True, **kwargs)
+network = identity + residual
+'''
+
+for index in range(args.n_residual_layers):
   network = layers.batch_normalization(network, beta=shared_beta, gamma=shared_gamma, fix_gamma=False)
+  network = layers.ReLU(network)
   identity = network
   residual = layers.convolution(X=network, weight=shared_weight, no_bias=True, **kwargs)
   network = identity + residual
@@ -43,7 +50,7 @@ optimizer_settings = {'args' : {'momentum' : 0.9}, 'initial_lr' : 0.1, 'optimize
 
 solver = MXSolver(
   batch_size         = 64,
-  devices            = (configs.gpu_index,),
+  devices            = (args.gpu_index,),
   epochs             = 30,
   initializer        = PReLUInitializer(),
   optimizer_settings = optimizer_settings,
@@ -59,7 +66,8 @@ data += load_mnist(path='stretched_canvas_mnist', scale=1, shape=(1, 56, 56))[2:
 
 info = solver.train(data)
 
-identifier = 'shrinked-mnist-residual-network-%d-%s' % (configs.n_residual_layers, configs.postfix)
+postfix = '-' + args.postfix if args.postfix else ''
+identifier = 'residual-network-on-shrinked-mnist-%d%s' % (args.n_residual_layers, postfix)
 pickle.dump(info, open('info/%s' % identifier, 'wb'))
 parameters = solver.export_parameters()
 pickle.dump(parameters, open('parameters/%s' % identifier, 'wb'))
