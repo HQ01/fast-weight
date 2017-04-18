@@ -51,13 +51,13 @@ solver = MXSolver(
 )
 
 from data_utilities import load_mnist
-data = load_mnist(path='stretched_mnist', scale=1, shape=(1, 56, 56))[:2]
-data += load_mnist(path='stretched_canvas_mnist', scale=1, shape=(1, 56, 56))[2:]
+data = load_mnist(path='stretched_canvas_mnist', scale=1, shape=(1, 56, 56))[:2]
+data += load_mnist(path='stretched_mnist', scale=1, shape=(1, 56, 56))[2:]
 
 info = solver.train(data)
 
 postfix = '-' + args.postfix if args.postfix else ''
-identifier = 'residual-network-on-shrinked-mnist-%d%s' % (args.n_residual_layers, postfix)
+identifier = 'residual-network-on-stretched-mnist-%d%s' % (args.n_residual_layers, postfix)
 
 import cPickle as pickle
 pickle.dump(info, open('info/%s' % identifier, 'wb'))

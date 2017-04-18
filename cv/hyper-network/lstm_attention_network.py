@@ -9,7 +9,7 @@ def _normalized_convolution(**args):
 
 def _lstm_convolution(X, n_filters, weight):
   return \
-    _normalized_convolution(X=X, n_filters=n_filters, kernel_shape=(3, 3), stride=(1, 1), pad=(1, 1), weight=weight, no_bias=True)
+    layers.convolution(X=X, n_filters=n_filters, kernel_shape=(1, 1), stride=(1, 1), pad=(1, 1), weight=weight, no_bias=True)
 
 def _lstm(X, settings, parameters, memory):
   n_filters = settings['n_filters'] * 4
@@ -28,8 +28,6 @@ def _lstm(X, settings, parameters, memory):
   g = layers.sigmoid(group[3])
   next_c = f * previous_c + i * g
   next_h = o * layers.tanh(next_c)
-  next_c = layers.batch_normalization(next_c)
-  next_h = layers.batch_normalization(next_h)
   memory = next_h, next_c
   return memory
 
@@ -110,23 +108,4 @@ def lstm_attention_network(settings):
   return network
 
 if __name__ is '__main__':
-  settings = (
-    {
-      'operator' : 'convolution',
-      'kwargs' : {'n_filters' : 16, 'kernel_shape' : (3, 3), 'stride' : (1, 1), 'pad' : (1, 1)},
-    },
-    {
-      'operator' : 'pooling',
-      'kwargs' : {'mode' : 'maximum', 'kernel_shape' : (2, 2), 'stride' : (2, 2), 'pad' : (0, 0)},
-    },
-    {
-      'operator' : 'lstm_attention_module',
-      'settings' : {
-        'convolution_settings' : {'n_filters' : 16, 'kernel_shape' : (3, 3), 'stride' : (1, 1), 'pad' : (1, 1)},
-        'n_layers' : 3,
-        'weight_sharing' : True,
-      },
-    }
-  )
-  network = lstm_attention_network(settings)
-  print output_shape(network, data=(10000, 16, 32, 32))
+

@@ -33,7 +33,7 @@ sparsity_loss = 0
 for index in range(args.n_residual_layers):
   network = layers.batch_normalization(network, beta=shared_beta, gamma=shared_gamma, fix_gamma=False)
   network = layers.ReLU(network)
-  network = layers.dropout(network, 0.1)
+  network = layers.dropout(network, 0.5)
   identity = network
   residual = layers.convolution(X=network, weight=shared_weight, no_bias=True, **kwargs)
   network = identity + residual
