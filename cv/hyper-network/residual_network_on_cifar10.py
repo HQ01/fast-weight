@@ -14,15 +14,19 @@ def _normalized_convolution(network, **kwargs):
 def _module(network, n_filters, n_layers):
   for index in range(n_layers):
     identity = network
-    residual = _normalized_convolution(network, n_filters=n_filters)
-    residual = _normalized_convolution(residual, n_filters=n_filters)
-    network = identity + residual
+    network = _normalized_convolution(network, n_filters=n_filters)
+    network = _normalized_convolution(network, n_filters=n_filters)
+    network += identity
 
   return network
 
 def _transit(network, n_filters):
+  '''
   identity = \
     _convolution(X=network, n_filters=n_filters, kernel_shape=(1, 1), stride=(2, 2), pad=(0, 0))
+  '''
+  identity = layers.pooling(X=network, mode='maximum', kernel_shape=(2, 2), stride=(2, 2), pad=(0, 0))
+  identity = _convolution(X=identity, n_filters=n_filters, kernel_shape=(1, 1), pad=(0, 0))
 
   network = _normalized_convolution(network, n_filters=n_filters, stride=(2, 2))
   network = _normalized_convolution(network, n_filters=n_filters)
@@ -56,7 +60,6 @@ if __name__ == '__main__':
   parser.add_argument('--initial_lr', type=float, default=0.1)
   parser.add_argument('--n_layers', type=int, required=True)
   parser.add_argument('--postfix', type=str, default='')
-  parser.add_argument('--sharing', type=bool, default=False)
   args = parser.parse_args()
 
   network = build_network(n_layers=args.n_layers)
@@ -73,13 +76,15 @@ if __name__ == '__main__':
     'weight_decay' : 0.0001,
   }
 
+  from mx_initializers import PReLUInitializer
+  initializer = PReLUInitializer()
+
   from mx_solver import MXSolver
-  from mx_initializer import PReLUInitializer
   solver = MXSolver(
     batch_size         = args.batch_size,
     devices            = (0, 1, 2, 3),
     epochs             = 150,
-    initializer        = PReLUInitializer(),
+    initializer        = initializer,
     optimizer_settings = optimizer_settings,
     symbol             = network,
     verbose            = True,

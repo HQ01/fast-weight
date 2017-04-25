@@ -11,16 +11,16 @@ def _normalized_convolution(network, **kwargs):
   network = _convolution(X=network, **kwargs)
   return network
 
-def _lstm_convolution(X, n_filters, weight):
+def _rnn_convolution(X, n_filters, weight):
   return _convolution(X=X, n_filters=n_filters, kernel_shape=(1, 1), pad=(0, 0), weight=weight)
 
-def _lstm(X, n_filters, parameters, memory):
+def _rnn(X, n_filters, parameters, memory):
   X_weight, h_weight, bias = parameters
   previous_h, previous_c = memory
 
-  if previous_h is 0: array = _lstm_convolution(X, n_filters, X_weight)
+  if previous_h is 0: array = _rnn_convolution(X, n_filters, X_weight)
   else: array = \
-      _lstm_convolution(X, n_filters, X_weight) + _lstm_convolution(previous_h, n_filters, h_weight)
+      _rnn_convolution(X, n_filters, X_weight) + _rnn_convolution(previous_h, n_filters, h_weight)
   array = layers.broadcast_plus(array, bias)
 
   group = layers.slice(X=array, axis=1, n_outputs=4)
@@ -40,19 +40,19 @@ def _read(n_filters, memory):
   return _convolution(X=h, n_filters=n_filters)
 
 def _write(X, n_filters, parameters, memory):
-  return _lstm(X, n_filters, parameters, memory)
+  return _rnn(X, n_filters, parameters, memory)
 
 n_modules = 0
-def _lstm_attention_module(network, settings):
+def _rnn_attention_module(network, settings):
   global n_modules
-  prefix = 'lstm_attention_module%d' % n_modules
+  prefix = 'rnn_attention_module%d' % n_modules
   n_modules += 1
 
   n_filters = settings['convolution_settings']['n_filters']
   X_weight = layers.variable('%s_X_weight' % prefix, shape=(4 * n_filters, n_filters, 1, 1))
   h_weight = layers.variable('%s_h_weight' % prefix, shape=(4 * n_filters, n_filters, 1, 1))
-  lstm_bias = layers.variable('%s_lstm_bias' % prefix, shape=(1, 4 * n_filters, 1, 1))
-  lstm_parameters = (X_weight, h_weight, lstm_bias)
+  rnn_bias = layers.variable('%s_rnn_bias' % prefix, shape=(1, 4 * n_filters, 1, 1))
+  rnn_parameters = (X_weight, h_weight, rnn_bias)
   memory = 0, 0
 
   kwargs = {key : value for key, value in settings['convolution_settings'].items()}
@@ -66,14 +66,14 @@ def _lstm_attention_module(network, settings):
   for index in range(settings['n_layers']):
     from_identity = network
 
-    memory = _write(network, n_filters * 4, lstm_parameters, memory)
-    from_lstm = _read(n_filters, memory)
+    memory = _write(network, n_filters * 4, rnn_parameters, memory)
+    from_rnn = _read(n_filters, memory)
 
     network = _normalized_convolution(network, **kwargs)
     network = _normalized_convolution(network, **kwargs)
 
-    network += from_identity + from_lstm
-#   network += from_lstm
+    network += from_identity + from_rnn
+#   network += from_rnn
 
   return network
 
@@ -95,11 +95,11 @@ def build_network(n_layers):
 
   for n_filters in (16, 32):
     convolution_settings['n_filters'] = n_filters
-    network = _lstm_attention_module(network, settings)
+    network = _rnn_attention_module(network, settings)
     network = _transit(network, n_filters * 2)
 
   convolution_settings['n_filters'] = 64
-  network = _lstm_attention_module(network, settings)
+  network = _rnn_attention_module(network, settings)
 
   network = layers.pooling(X=network, mode='average', kernel_shape=(8, 8), stride=(1, 1), pad=(0, 0))
   network = layers.flatten(network)
@@ -116,7 +116,7 @@ if __name__ == '__main__':
   parser.add_argument('--initial_lr', type=float, default=0.1)
   parser.add_argument('--n_layers', type=int, required=True)
   parser.add_argument('--postfix', type=str, default='')
-  parser.add_argument('--weight_sharing', type=bool, default=False)
+  parser.add_argument('--sharing', type=bool, default=False)
   args = parser.parse_args()
 
   network = build_network(n_layers=args.n_layers)
@@ -151,7 +151,7 @@ if __name__ == '__main__':
   info = solver.train(data)
 
   postfix = '-' + args.postfix if args.postfix else ''
-  identifier = 'lstm-attention-network-on-cifar-10-%d%s' % (args.n_layers, postfix)
+  identifier = 'rnn-attention-network-on-cifar-10-%d%s' % (args.n_layers, postfix)
 
   import cPickle as pickle
   pickle.dump(info, open('info/%s' % identifier, 'wb'))
