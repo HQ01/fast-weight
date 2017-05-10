@@ -94,8 +94,13 @@ def _module(network, n_filters, n_layers):
   return network
 
 def _transit(network, n_filters):
+  '''
   identity = \
     _convolution(X=network, n_filters=n_filters, kernel_shape=(1, 1), stride=(2, 2), pad=(0, 0))
+  '''
+
+  identity = layers.pooling(X=network, mode='maximum', kernel_shape=(2, 2), stride=(2, 2), pad=(0, 0))
+  identity = _convolution(X=identity, n_filters=n_filters, kernel_shape=(1, 1), pad=(0, 0))
 
   network = _normalized_convolution(network, n_filters=n_filters, stride=(2, 2))
   network = _normalized_convolution(network, n_filters=n_filters)
@@ -205,7 +210,9 @@ if __name__ == '__main__':
   variance_dict = {key : mx.nd.ones(value.shape, context) for key, value in rnn_args_grad.items()}
 
   from data_utilities import load_cifar10_record
-  training_data, _, _ = load_cifar10_record(args.batch_size)
+  training_data, validation_data, _ = load_cifar10_record(args.batch_size)
+
+  move = lambda h, d, i: (h * i + d) / (i + 1)
 
   for epoch in range(args.n_epochs):
     training_data.reset()
@@ -220,9 +227,18 @@ if __name__ == '__main__':
       rnn_loss_executor.backward()
 
       if (iteration + 1) % 100 == 0:
-        outputs = rnn_executor.forward()
-        accuracy = classification_accuracy(outputs[0], batch.label[0])
-        loss = cross_entropy_loss(outputs[0], batch.label[0])
+        accuracy, loss = 0, 0
+
+        validation_data.reset()
+        for i, batch in enumerate(validation_data):
+          resnet_executor.arg_dict['data'][:] = batch.data[0]
+          outputs = resnet_executor.forward()
+          for index, output in enumerate(outputs[:-1]):
+            rnn_executor.arg_dict['data%d' % index][:] = output
+          outputs = rnn_executor.forward()
+          accuracy = move(accuracy, classification_accuracy(outputs[0], batch.label[0]), i)
+          loss = move(loss, cross_entropy_loss(outputs[0], batch.label[0]), i)
+
         print 'iteration %d accuracy %f loss %f' % (iteration + 1, accuracy, loss)
 
       from mxnet.ndarray import adam_update as update
@@ -232,13 +248,13 @@ if __name__ == '__main__':
         array = rnn_arg_dict[key]
         mean = mean_dict[key]
         variance = variance_dict[key]
-        update(array, value, mean, variance, 1e-5, out=array)
+        update(array, value, mean, variance, 1e-3, out=array)
 
   postfix = '-' + args.postfix if args.postfix else ''
   identifier = '%s-rnn-on-residual-network-on-cifar-10-%d%s' % (args.rnn, args.n_layers, postfix)
 
   '''
   pickle.dump(info, open('info/%s' % identifier, 'wb'))
-  parameters = solver.export_parameters()
+  parameters = {key : value.asnumpy() for 
   pickle.dump(parameters, open('parameters/%s' % identifier, 'wb'))
   '''

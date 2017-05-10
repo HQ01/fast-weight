@@ -23,7 +23,7 @@ def _module(network, n_filters, n_layers):
 def _transit(network, n_filters):
   '''
   identity = \
-    _convolution(X=network, n_filters=n_filters, kernel_shape=(1, 1), stride=(2, 2), pad=(0, 0))
+      _convolution(X=network, n_filters=n_filters, kernel_shape=(1, 1), stride=(2, 2), pad=(0, 0))
   '''
   identity = layers.pooling(X=network, mode='maximum', kernel_shape=(2, 2), stride=(2, 2), pad=(0, 0))
   identity = _convolution(X=identity, n_filters=n_filters, kernel_shape=(1, 1), pad=(0, 0))
