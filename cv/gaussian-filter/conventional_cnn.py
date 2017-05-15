@@ -3,14 +3,12 @@ from minpy.nn.model_builder import *
 from minpy.nn.modules import *
 
 class ConventionalCNN(Model):
-  def __init__(self, n_filters, n_units):
+  def __init__(self, n_layers, n_filters, n_units):
     super(ConventionalCNN, self).__init__(jit=True)
 
-    self._convolutions = (
-      Convolution(num_filter=n_filters, kernel=(5, 5), stride=(1, 1), pad=(2, 2)),
-      Convolution(num_filter=n_filters, kernel=(5, 5), stride=(1, 1), pad=(2, 2)),
-      Convolution(num_filter=n_filters, kernel=(5, 5), stride=(1, 1), pad=(2, 2)),
-    )
+    kwargs = {'num_filter': n_filters, 'kernel': (5, 5), 'stride': (1, 1), 'pad': (2, 2)}
+    self._convolutions = tuple(Convolution(**kwargs) for i in range(n_layers))
+
     self._linear = FullyConnected(num_hidden=n_units)
     self._classifier = FullyConnected(num_hidden=10)
 
@@ -41,6 +39,7 @@ if __name__ == '__main__':
   parser.add_argument('--lr', type=float, default=1e-3)
   parser.add_argument('--n_epochs', type=int, default=25)
   parser.add_argument('--n_filters', type=int, default=4)
+  parser.add_argument('--n_layers', type=int, default=3)
   parser.add_argument('--n_units', type=int, default=16)
   args = parser.parse_args()
 
@@ -53,14 +52,15 @@ if __name__ == '__main__':
       (batch.data[0].as_in_context(context), batch.label[0].as_in_context(context))
 
   from data_utilities import load_mnist
-  data = load_mnist(path=args.path, normalize=True, shape=(1, 56, 56))
+  data = load_mnist(path=args.path, normalize=True, shape=(1, 112, 112))
+# data = load_mnist(path=args.path, normalize=True, shape=(1, 56, 56))
 
   from mxnet.io import NDArrayIter
   training_data = NDArrayIter(data[0], data[1], batch_size=args.batch_size)
   validation_data = NDArrayIter(data[2], data[3], batch_size=args.batch_size)
   test_data = NDArrayIter(data[4], data[5], batch_size=args.batch_size)
 
-  model = ConventionalCNN(args.n_filters, args.n_units)
+  model = ConventionalCNN(args.n_layers, args.n_filters, args.n_units)
   updater = Updater(model, update_rule='adam', lr=args.lr)
 # updater = Updater(model, update_rule='sgd_momentum', lr=1e-1, momentum=0.9)
   

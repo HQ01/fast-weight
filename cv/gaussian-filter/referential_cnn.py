@@ -3,16 +3,14 @@ from minpy.nn.model_builder import *
 from minpy.nn.modules import *
 
 class ReferentialCNN(Model):
-  def __init__(self, n_filters, n_scales, n_units):
+  def __init__(self, n_layers, n_filters, n_scales, n_units):
     super(ReferentialCNN, self).__init__(jit=True)
 
     self._n_scales = n_scales
 
-    self._convolutions = (
-      Convolution(num_filter=n_filters, kernel=(5, 5), stride=(1, 1), pad=(2, 2)),
-      Convolution(num_filter=n_filters, kernel=(5, 5), stride=(1, 1), pad=(2, 2)),
-      Convolution(num_filter=n_filters, kernel=(5, 5), stride=(1, 1), pad=(2, 2)),
-    )
+    kwargs = {'num_filter': n_filters, 'kernel': (5, 5), 'stride': (1, 1), 'pad': (2, 2), 'cudnn_tune': 'limited_workspace'}
+    self._convolutions = tuple(Convolution(**kwargs) for i in range(n_layers))
+
     self._linear = FullyConnected(num_hidden=n_units)
     self._classifier = FullyConnected(num_hidden=10)
 
@@ -21,9 +19,9 @@ class ReferentialCNN(Model):
     for i, c in enumerate(self._convolutions):
       data = c(data)
       data = Tanh()(data)
-      data = nd.Pooling(data=data, pool_type='max', kernel=(2, 2), stride=(2, 2), pad=(0, 0))
+      data = nd.Pooling(data=data, pool_type='max', kernel=(2, 2), stride=(2, 2), pad=(0, 0), cudnn_off=True)
 
-    data = nd.max(data, axis=1)
+#   data = nd.max(data, axis=1)
     data = self._linear(data)
     data = Tanh()(data)
     data = self._classifier(data)
@@ -38,11 +36,12 @@ if __name__ == '__main__':
   from argparse import ArgumentParser
   parser = ArgumentParser()
   parser.add_argument('--path', type=str, default='standard-scale-mnist')
-  parser.add_argument('--batch_size', type=int, default=256)
+  parser.add_argument('--batch_size', type=int, default=32)
   parser.add_argument('--gpu_index', type=int, default=0)
   parser.add_argument('--lr', type=float, default=1e-3)
   parser.add_argument('--n_epochs', type=int, default=25)
   parser.add_argument('--n_filters', type=int, default=4)
+  parser.add_argument('--n_layers', type=int, default=3)
   parser.add_argument('--n_scales', type=int, default=3)
   parser.add_argument('--n_units', type=int, default=16)
   args = parser.parse_args()
@@ -57,13 +56,14 @@ if __name__ == '__main__':
 
   from data_utilities import load_mnist
   data = load_mnist(path=args.path, normalize=True, shape=(1, 56, 56))
+# data = load_mnist(path=args.path, normalize=True, shape=(1, 112, 112))
 
   from mxnet.io import NDArrayIter
   training_data = NDArrayIter(data[0], data[1], batch_size=args.batch_size)
   validation_data = NDArrayIter(data[2], data[3], batch_size=args.batch_size)
   test_data = NDArrayIter(data[4], data[5], batch_size=args.batch_size)
 
-  model = ReferentialCNN(args.n_filters, args.n_scales, args.n_units)
+  model = ReferentialCNN(args.n_layers, args.n_filters, args.n_scales, args.n_units)
   updater = Updater(model, update_rule='adam', lr=args.lr)
 # updater = Updater(model, update_rule='sgd_momentum', lr=1e-1, momentum=0.9)
   
@@ -122,3 +122,4 @@ identifier = 'referential-cnn-%d-filters-%s' % (args.n_filters, args.path)
 history = validation_accuracy, test_accuracy
 from joblib import dump
 dump(history, 'info/%s' % identifier)
+# dump(params, 'parameters/%s' % identifier)
